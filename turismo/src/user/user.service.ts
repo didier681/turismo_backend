@@ -45,4 +45,38 @@ export class UserService {
     // Guardar en la base de datos
     return await this.userRepository.save(user);
   }
+ 
+  /**
+   * Obtener todos los usuarios
+   * No incluye las contraseñas
+   */
+  async findAll(): Promise<User[]> {
+    return await this.userRepository.find();
+  }
+
+
+  /**
+   * Obtener un usuario por ID
+   */
+  async findOne(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+    
+    return user;
+  }
+
+
+
+  /**
+   * Eliminar un usuario (soft delete)
+   */
+  async remove(id: number): Promise<void> {
+    const user = await this.findOne(id);
+    await this.userRepository.remove(user);
+  }
+
+
 }
