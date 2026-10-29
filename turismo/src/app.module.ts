@@ -3,6 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { CategoriaSitioModule } from './categoria-sitio/categoria-sitio.module';
+import { SitioCategoriaModule } from './sitio-categoria/sitio-categoria.module';
+import { SitioTuristicoModule } from './sitio-turistico/sitio-turistico.module';
+import { ZonaModule } from './zona/zona.module';
+import { FavoritoModule } from './favorito/favorito.module';
+import { ResenaModule } from './resena/resena.module';
+import { VisitaModule } from './visita/visita.module';
 
 @Module({
   imports: [
@@ -31,9 +38,17 @@ import { AuthModule } from './auth/auth.module';
       }),
     }),
 
-    // Módulos de la aplicación
+    // Los módulos de dominio registran sus controladores y entidades.
     UserModule,
     AuthModule,
+    ZonaModule,
+    SitioTuristicoModule,
+    CategoriaSitioModule,
+    SitioCategoriaModule,
+    // Interacciones del usuario con el catálogo turístico.
+    VisitaModule,
+    FavoritoModule,
+    ResenaModule,
   ],
 })
 export class AppModule {}
