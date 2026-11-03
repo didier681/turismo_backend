@@ -9,50 +9,45 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AuthResponse } from './interfaces/auth-response.interface';
 
 @Injectable()
+// Coordina el registro, el inicio de sesión y la validación de tokens.
 export class AuthService {
+  // Recibe los servicios de usuarios y firma JWT.
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
   ) {}
 
-  /**
-   * Registrar un nuevo usuario
-   * Crea el usuario y retorna un token JWT
-   */
+  // Registra la cuenta y devuelve sus datos públicos con un token.
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
-    // Crear el usuario usando el servicio de usuarios
+    // UserService aplica las reglas de creación y almacena la contraseña cifrada.
     const user: User = await this.userService.create(registerDto);
 
     return await this.buildAuthResponse(user);
   }
 
-  /**
-   * Login de usuario
-   * Valida credenciales y retorna un token JWT
-   */
+  // Comprueba credenciales y emite un token para cuentas activas.
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const { email, password } = loginDto;
 
-    // Buscar usuario por email (incluye password); puede ser null
+    // La consulta incluye el hash necesario para verificar la contraseña.
     const user: User | null = await this.userService.findOneByEmail(email);
 
-    // Verificar si el usuario existe
+    // Usa un error genérico para no revelar si el email está registrado.
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Comparar contraseñas
+    // Compara la contraseña enviada con el hash guardado.
     const isPasswordValid: boolean = await bcrypt.compare(
       password,
-      user.password,
+      user.passwordHash,
     );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Verificar si el usuario está activo (después de validar la contraseña,
-    // para no revelar el estado de cuentas ajenas)
+    // Comprueba el estado después de validar credenciales para no revelar cuentas ajenas.
     if (!user.isActive) {
       throw new UnauthorizedException('Usuario inactivo');
     }
@@ -60,10 +55,7 @@ export class AuthService {
     return await this.buildAuthResponse(user);
   }
 
-  /**
-   * Validar un token manualmente y retornar el usuario
-   * (útil, por ejemplo, para WebSockets)
-   */
+  // Verifica un JWT y recupera su usuario activo para usos fuera de Passport.
   async validateToken(token: string): Promise<User> {
     let payload: JwtPayload;
 
@@ -82,9 +74,7 @@ export class AuthService {
     return user;
   }
 
-  /**
-   * Generar token JWT con el payload del usuario
-   */
+  // Firma un token con la identidad y el rol del usuario.
   private async generateToken(user: User): Promise<string> {
     const payload: JwtPayload = {
       sub: user.id,
@@ -92,13 +82,11 @@ export class AuthService {
       role: user.role,
     };
 
-    // Firmar y retornar el token
+    // Usa la configuración registrada en JwtModule para firmar el payload.
     return await this.jwtService.signAsync(payload);
   }
 
-  /**
-   * Construir la respuesta de register/login (sin la contraseña)
-   */
+  // Construye la respuesta de registro o login sin incluir el hash.
   private async buildAuthResponse(user: User): Promise<AuthResponse> {
     const token: string = await this.generateToken(user);
 
@@ -106,7 +94,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.fullName,
+        nombre: user.nombre,
         role: user.role,
       },
       token,

@@ -6,27 +6,27 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
+// Contiene las reglas de negocio y el acceso a persistencia de usuarios.
 export class UserService {
-  // Número de rondas de encriptación de bcrypt
+  // Número de rondas usado para generar hashes de contraseñas con bcrypt.
   private readonly saltRounds = 10;
 
+  // Recibe el repositorio de TypeORM para consultar y guardar usuarios.
   constructor(
-    // Inyección del repositorio de User
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
 
   /**
-   * Crear un nuevo usuario
-   * Encripta la contraseña antes de guardarla
+   * Crea una cuenta, comprueba el correo y guarda la contraseña como hash.
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Verificar si el email ya existe
+    // Impide crear dos cuentas con el mismo correo.
     const emailTaken: boolean = await this.userRepository.existsBy({
       email: createUserDto.email,
     });
@@ -35,33 +35,34 @@ export class UserService {
       throw new ConflictException('El email ya está registrado');
     }
 
-    // Encriptar la contraseña
+    // Nunca se persiste la contraseña recibida en texto plano.
     const hashedPassword: string = await bcrypt.hash(
       createUserDto.password,
       this.saltRounds,
     );
 
-    // Crear nueva instancia de usuario
+    // Asigna solo los datos permitidos y usa el rol predeterminado si falta.
     const user: User = this.userRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
+      email: createUserDto.email,
+      nombre: createUserDto.nombre,
+      idiomaPref: createUserDto.idiomaPref,
+      passwordHash: hashedPassword,
+      role: createUserDto.role ?? UserRole.Usuario,
     });
 
-    // Guardar en la base de datos
+    // Persiste la cuenta y devuelve la entidad creada.
     return await this.userRepository.save(user);
   }
 
   /**
-   * Obtener todos los usuarios
-   * No incluye las contraseñas (select: false en la entidad)
+   * Lista usuarios sin cargar hashes de contraseña.
    */
   async findAll(): Promise<User[]> {
     return await this.userRepository.find();
   }
 
   /**
-   * Obtener un usuario por ID
-   * Lanza 404 si no existe (para uso en controladores)
+   * Busca un usuario por ID o lanza 404 si no existe.
    */
   async findOne(id: number): Promise<User> {
     const user: User | null = await this.userRepository.findOneBy({ id });
@@ -74,17 +75,14 @@ export class UserService {
   }
 
   /**
-   * Buscar un usuario por ID sin lanzar excepción
-   * Devuelve null si no existe (lo usa la estrategia JWT)
+   * Busca por ID sin excepción; la estrategia JWT usa null para token inválido.
    */
   async findById(id: number): Promise<User | null> {
     return await this.userRepository.findOneBy({ id });
   }
 
   /**
-   * Buscar usuario por email
-   * Incluye la contraseña (solo para autenticación)
-   * Devuelve null si el email no está registrado
+   * Busca por email y carga explícitamente el hash requerido por el login.
    */
   async findOneByEmail(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
@@ -92,8 +90,10 @@ export class UserService {
       select: {
         id: true,
         email: true,
-        password: true,
-        fullName: true,
+        passwordHash: true,
+        nombre: true,
+        idiomaPref: true,
+        fechaRegistro: true,
         role: true,
         isActive: true,
       },
@@ -101,12 +101,12 @@ export class UserService {
   }
 
   /**
-   * Actualizar un usuario
+   * Actualiza los campos permitidos y vuelve a hashear si cambia la contraseña.
    */
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user: User = await this.findOne(id);
 
-    // Si se cambia el email, verificar que no pertenezca a otro usuario
+    // Evita asignar un correo que ya pertenezca a otra cuenta.
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const emailTaken: boolean = await this.userRepository.existsBy({
         email: updateUserDto.email,
@@ -116,22 +116,25 @@ export class UserService {
       }
     }
 
-    // Copia de los cambios para no modificar el DTO recibido
-    const changes: UpdateUserDto = { ...updateUserDto };
+    // Separa la contraseña para no copiarla en texto plano a la entidad.
+    const { password, ...changes } = updateUserDto;
 
-    // Si se actualiza la contraseña, encriptarla
-    if (changes.password) {
-      changes.password = await bcrypt.hash(changes.password, this.saltRounds);
-    }
+    // Calcula el nuevo hash únicamente cuando se envía una contraseña.
+    const passwordHash = password
+      ? await bcrypt.hash(password, this.saltRounds)
+      : undefined;
 
-    // Combinar los cambios con la entidad existente
+    // Aplica los campos validados y asigna el hash por separado.
     this.userRepository.merge(user, changes);
+    if (passwordHash) {
+      user.passwordHash = passwordHash;
+    }
 
     return await this.userRepository.save(user);
   }
 
   /**
-   * Eliminar un usuario (borrado físico del registro)
+   * Elimina físicamente la cuenta después de comprobar que existe.
    */
   async remove(id: number): Promise<void> {
     const user: User = await this.findOne(id);

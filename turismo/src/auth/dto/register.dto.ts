@@ -1,5 +1,5 @@
+import { OmitType } from '@nestjs/mapped-types';
 import { CreateUserDto } from '../../user/dto/create-user.dto';
 
-// El registro pide los mismos datos que la creación de usuario:
-// se reutilizan las validaciones de CreateUserDto
-export class RegisterDto extends CreateUserDto {}
+// El registro reutiliza validaciones y no permite que el cliente asigne su rol.
+export class RegisterDto extends OmitType(CreateUserDto, ['role'] as const) {}

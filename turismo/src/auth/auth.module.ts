@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -9,26 +9,34 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
-    // Importar UserModule para acceder a UserService
+    // Permite que AuthService utilice el servicio de usuarios.
     UserModule,
 
-    // Configurar Passport con 'jwt' como estrategia por defecto
+    // Define JWT como estrategia predeterminada de Passport.
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
-    // Configurar JWT leyendo el secreto y la expiración del .env
+    // Configura la firma y validación de JWT con valores de entorno.
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService): JwtModuleOptions => ({
-        secret: configService.getOrThrow<string>('JWT_SECRET'),
-        signOptions: {
-          // Segundos; las variables de entorno siempre llegan como string
-          expiresIn: Number(configService.getOrThrow<string>('JWT_EXPIRATION')),
-        },
-      }),
+      // Lee la duración como timespan y usa una hora si no se configura.
+      useFactory: (configService: ConfigService): JwtModuleOptions => {
+        const expiresIn = configService.get<string>('JWT_EXPIRATION') ?? '1h';
+
+        return {
+          secret: configService.getOrThrow<string>('JWT_SECRET'),
+          signOptions: {
+            expiresIn: expiresIn as JwtSignOptions['expiresIn'],
+          },
+        };
+      },
     }),
   ],
+  // Expone las rutas de registro, login y perfil.
   controllers: [AuthController],
+  // Registra el servicio y la estrategia Passport de autenticación.
   providers: [AuthService, JwtStrategy],
+  // Permite reutilizar AuthService desde otros módulos.
   exports: [AuthService],
 })
+// Agrupa la configuración JWT y los componentes de autenticación.
 export class AuthModule {}

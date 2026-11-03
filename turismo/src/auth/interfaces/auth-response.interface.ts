@@ -2,7 +2,7 @@
 export interface AuthUser {
   id: number;
   email: string;
-  fullName: string;
+  nombre: string;
   role: string;
 }
 
