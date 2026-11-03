@@ -9,6 +9,7 @@ import {
 import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.entity';
 import { NegocioCategoria } from '../../negocio-categoria/entities/negocio-categoria.entity';
 import { Servicio } from '../../servicio/entities/servicio.entity';
+import { Zona } from '../../zona/entities/zona.entity';
 
 // Niveles de membresía permitidos para un negocio.
 export enum EstadoMembresia {
@@ -17,21 +18,30 @@ export enum EstadoMembresia {
   Premium = 'premium',
 }
 
-// Negocio ubicado en un sitio turístico, con categorías y servicios propios.
+// Negocio que siempre pertenece a una zona, asociado opcionalmente a un sitio turístico.
 @Entity('negocios')
 export class Negocio {
   // Identificador único del negocio.
   @PrimaryGeneratedColumn({ name: 'id_negocio' })
   idNegocio: number;
 
-  // Clave foránea del sitio turístico al que pertenece.
-  @Column({ type: 'int', name: 'id_sitio' })
-  idSitio: number;
+  // Clave foránea obligatoria de la zona a la que pertenece el negocio.
+  @Column({ type: 'int', name: 'id_zona' })
+  idZona: number;
 
-  // Sitio turístico al que pertenece obligatoriamente el negocio.
-  @ManyToOne(() => SitioTuristico, { nullable: false })
+  // Un negocio siempre pertenece a una zona, aunque no esté asociado a un sitio.
+  @ManyToOne(() => Zona, { nullable: false })
+  @JoinColumn({ name: 'id_zona', referencedColumnName: 'idZona' })
+  zona: Zona;
+
+  // Clave opcional del sitio turístico asociado al negocio.
+  @Column({ type: 'int', name: 'id_sitio', nullable: true })
+  idSitio: number | null;
+
+  // Un negocio puede estar o no asociado a un sitio turístico.
+  @ManyToOne(() => SitioTuristico, { nullable: true })
   @JoinColumn({ name: 'id_sitio', referencedColumnName: 'idSitio' })
-  sitio: SitioTuristico;
+  sitio: SitioTuristico | null;
 
   // Nombre comercial con el que se identifica el negocio.
   @Column({ type: 'varchar', length: 255, name: 'nombre_comercial' })

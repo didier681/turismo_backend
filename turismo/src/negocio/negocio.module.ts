@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
+import { Zona } from '../zona/entities/zona.entity';
 import { NegocioController } from './negocio.controller';
 import { NegocioService } from './negocio.service';
 import { Negocio } from './entities/negocio.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Negocio, SitioTuristico])],
+  imports: [TypeOrmModule.forFeature([Negocio, SitioTuristico, Zona])],
   controllers: [NegocioController],
   providers: [NegocioService],
   exports: [NegocioService],

@@ -12,12 +12,18 @@ import {
 } from 'class-validator';
 import { EstadoMembresia } from '../entities/negocio.entity';
 
-// Datos validados para registrar un negocio asociado a un sitio existente.
+// Datos validados para registrar un negocio que siempre pertenece a una zona.
 export class CreateNegocioDto {
-  // Exige un identificador entero positivo para el sitio turístico.
+  // Exige el identificador entero positivo de la zona obligatoria del negocio.
   @IsInt()
   @Min(1)
-  idSitio: number;
+  idZona: number;
+
+  // El sitio turístico es opcional; si se envía, su identificador debe ser positivo.
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  idSitio?: number | null;
 
   // Exige un nombre comercial de texto no vacío de hasta 255 caracteres.
   @IsString()
