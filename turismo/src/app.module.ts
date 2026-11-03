@@ -15,6 +15,8 @@ import { NegocioModule } from './negocio/negocio.module';
 import { NegocioCategoriaModule } from './negocio-categoria/negocio-categoria.module';
 import { ServicioModule } from './servicio/servicio.module';
 import { TarifaModule } from './tarifa/tarifa.module';
+import { PublicidadModule } from './publicidad/publicidad.module';
+import { MultimediaModule } from './multimedia/multimedia.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { TarifaModule } from './tarifa/tarifa.module';
     NegocioCategoriaModule,
     ServicioModule,
     TarifaModule,
+    PublicidadModule,
+    MultimediaModule,
   ],
 })
 export class AppModule {}
