@@ -10,6 +10,11 @@ import { ZonaModule } from './zona/zona.module';
 import { FavoritoModule } from './favorito/favorito.module';
 import { ResenaModule } from './resena/resena.module';
 import { VisitaModule } from './visita/visita.module';
+import { CategoriaNegocioModule } from './categoria-negocio/categoria-negocio.module';
+import { NegocioModule } from './negocio/negocio.module';
+import { NegocioCategoriaModule } from './negocio-categoria/negocio-categoria.module';
+import { ServicioModule } from './servicio/servicio.module';
+import { TarifaModule } from './tarifa/tarifa.module';
 
 @Module({
   imports: [
@@ -49,6 +54,11 @@ import { VisitaModule } from './visita/visita.module';
     VisitaModule,
     FavoritoModule,
     ResenaModule,
+    CategoriaNegocioModule,
+    NegocioModule,
+    NegocioCategoriaModule,
+    ServicioModule,
+    TarifaModule,
   ],
 })
 export class AppModule {}
