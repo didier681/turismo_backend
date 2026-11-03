@@ -9,6 +9,7 @@ import { Negocio } from './entities/negocio.entity';
 @Injectable()
 // Gestiona negocios y valida el sitio turístico asociado.
 export class NegocioService {
+  // Inyecta los repositorios para negocios y para validar los sitios asociados.
   constructor(
     @InjectRepository(Negocio)
     private readonly negocioRepository: Repository<Negocio>,

@@ -13,6 +13,7 @@ import { Tarifa } from './entities/tarifa.entity';
 @Injectable()
 // Gestiona tarifas, su servicio asociado y la coherencia de su vigencia.
 export class TarifaService {
+  // Inyecta repositorios para tarifas y para validar sus servicios asociados.
   constructor(
     @InjectRepository(Tarifa)
     private readonly tarifaRepository: Repository<Tarifa>,

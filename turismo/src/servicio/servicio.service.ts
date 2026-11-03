@@ -9,6 +9,7 @@ import { Servicio } from './entities/servicio.entity';
 @Injectable()
 // Gestiona servicios y verifica el negocio al que pertenecen.
 export class ServicioService {
+  // Inyecta el repositorio de servicios y el de negocios para validar referencias.
   constructor(
     @InjectRepository(Servicio)
     private readonly servicioRepository: Repository<Servicio>,

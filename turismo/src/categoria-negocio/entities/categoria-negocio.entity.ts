@@ -4,9 +4,11 @@ import { NegocioCategoria } from '../../negocio-categoria/entities/negocio-categ
 // Clasificación reutilizable para organizar los negocios.
 @Entity('categorias_negocio')
 export class CategoriaNegocio {
+  // Identificador único de la categoría de negocio.
   @PrimaryGeneratedColumn({ name: 'id_categoria_neg' })
   idCategoriaNeg: number;
 
+  // Nombre visible de la categoría.
   @Column({ type: 'varchar', length: 255 })
   nombre: string;
 

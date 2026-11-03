@@ -8,6 +8,7 @@ import { CategoriaNegocio } from './entities/categoria-negocio.entity';
 @Injectable()
 // Administra las categorías reutilizables para clasificar negocios.
 export class CategoriaNegocioService {
+  // Inyecta el repositorio de categorías para realizar las operaciones CRUD.
   constructor(
     @InjectRepository(CategoriaNegocio)
     private readonly categoriaRepository: Repository<CategoriaNegocio>,

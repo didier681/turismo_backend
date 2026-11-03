@@ -10,6 +10,7 @@ import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.e
 import { NegocioCategoria } from '../../negocio-categoria/entities/negocio-categoria.entity';
 import { Servicio } from '../../servicio/entities/servicio.entity';
 
+// Niveles de membresía permitidos para un negocio.
 export enum EstadoMembresia {
   Gratis = 'gratis',
   Basico = 'basico',
@@ -19,9 +20,11 @@ export enum EstadoMembresia {
 // Negocio ubicado en un sitio turístico, con categorías y servicios propios.
 @Entity('negocios')
 export class Negocio {
+  // Identificador único del negocio.
   @PrimaryGeneratedColumn({ name: 'id_negocio' })
   idNegocio: number;
 
+  // Clave foránea del sitio turístico al que pertenece.
   @Column({ type: 'int', name: 'id_sitio' })
   idSitio: number;
 
@@ -30,24 +33,31 @@ export class Negocio {
   @JoinColumn({ name: 'id_sitio', referencedColumnName: 'idSitio' })
   sitio: SitioTuristico;
 
+  // Nombre comercial con el que se identifica el negocio.
   @Column({ type: 'varchar', length: 255, name: 'nombre_comercial' })
   nombreComercial: string;
 
+  // NIT u otro documento de identificación del negocio.
   @Column({ type: 'varchar', length: 50, name: 'nit_documento' })
   nitDocumento: string;
 
+  // Latitud geográfica del negocio en formato decimal.
   @Column({ type: 'decimal', precision: 10, scale: 7 })
   latitud: string;
 
+  // Longitud geográfica del negocio en formato decimal.
   @Column({ type: 'decimal', precision: 10, scale: 7 })
   longitud: string;
 
+  // Teléfono de contacto del negocio.
   @Column({ type: 'varchar', length: 30 })
   telefono: string;
 
+  // Correo electrónico de contacto del negocio.
   @Column({ type: 'varchar', length: 255 })
   email: string;
 
+  // Nivel de membresía; si no se indica, inicia como gratis.
   @Column({
     type: 'enum',
     enum: EstadoMembresia,

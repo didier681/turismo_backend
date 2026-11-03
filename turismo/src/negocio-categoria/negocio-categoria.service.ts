@@ -14,6 +14,7 @@ import { NegocioCategoria } from './entities/negocio-categoria.entity';
 @Injectable()
 // Administra la asociación N:M entre negocios y categorías.
 export class NegocioCategoriaService {
+  // Inyecta el repositorio de asociaciones y la conexión para operaciones transaccionales.
   constructor(
     @InjectRepository(NegocioCategoria)
     private readonly asociacionRepository: Repository<NegocioCategoria>,

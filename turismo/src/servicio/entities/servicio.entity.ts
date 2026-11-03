@@ -12,9 +12,11 @@ import { Tarifa } from '../../tarifa/entities/tarifa.entity';
 // Servicio ofrecido por un negocio, con tarifas asociadas.
 @Entity('servicios')
 export class Servicio {
+  // Identificador único del servicio.
   @PrimaryGeneratedColumn({ name: 'id_servicio' })
   idServicio: number;
 
+  // Clave foránea del negocio que ofrece el servicio.
   @Column({ type: 'int', name: 'id_negocio' })
   idNegocio: number;
 
@@ -25,12 +27,15 @@ export class Servicio {
   @JoinColumn({ name: 'id_negocio', referencedColumnName: 'idNegocio' })
   negocio: Negocio;
 
+  // Nombre con el que se presenta el servicio.
   @Column({ type: 'varchar', length: 255 })
   nombre: string;
 
+  // Descripción detallada del servicio.
   @Column({ type: 'text' })
   descripcion: string;
 
+  // Información textual sobre cuándo o cómo está disponible el servicio.
   @Column({ type: 'varchar', length: 255 })
   disponibilidad: string;
 

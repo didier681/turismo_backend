@@ -5,6 +5,7 @@ import { Negocio } from '../../negocio/entities/negocio.entity';
 // Tabla puente N:M; la clave compuesta impide repetir la misma categoría.
 @Entity('negocio_categoria')
 export class NegocioCategoria {
+  // Clave del negocio que integra la clave compuesta de la asociación.
   @PrimaryColumn({ type: 'int', name: 'id_negocio' })
   idNegocio: number;
 
@@ -16,6 +17,7 @@ export class NegocioCategoria {
   @JoinColumn({ name: 'id_negocio', referencedColumnName: 'idNegocio' })
   negocio: Negocio;
 
+  // Clave de la categoría que integra la clave compuesta de la asociación.
   @PrimaryColumn({ type: 'int', name: 'id_categoria_neg' })
   idCategoriaNeg: number;
 
