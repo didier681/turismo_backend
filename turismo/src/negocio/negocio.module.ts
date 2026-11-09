@@ -5,9 +5,10 @@ import { Zona } from '../zona/entities/zona.entity';
 import { NegocioController } from './negocio.controller';
 import { NegocioService } from './negocio.service';
 import { Negocio } from './entities/negocio.entity';
+import { User } from '../user/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Negocio, SitioTuristico, Zona])],
+  imports: [TypeOrmModule.forFeature([Negocio, SitioTuristico, Zona, User])],
   controllers: [NegocioController],
   providers: [NegocioService],
   exports: [NegocioService],

@@ -6,6 +6,7 @@ import {
 } from 'typeorm';
 import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.entity';
 import { Visita } from '../../visita/entities/visita.entity';
+import { GestorZona } from '../../gestor-zona/entities/gestor-zona.entity';
 
 export enum TipoZona {
   Pais = 'pais',
@@ -42,4 +43,8 @@ export class Zona {
   // Visitas que registran esta zona como contexto geográfico.
   @OneToMany(() => Visita, (visita) => visita.zona)
   visitas: Visita[];
+
+  // Asignaciones de gestores para administrar sitios de esta zona.
+  @OneToMany(() => GestorZona, (gestorZona) => gestorZona.zona)
+  gestoresAsignados: GestorZona[];
 }

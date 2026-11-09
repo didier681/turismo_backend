@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -10,6 +11,7 @@ import { Zona } from '../zona/entities/zona.entity';
 import { CreateNegocioDto } from './dto/create-negocio.dto';
 import { UpdateNegocioDto } from './dto/update-negocio.dto';
 import { Negocio } from './entities/negocio.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 
 @Injectable()
 // Gestiona negocios, que siempre pertenecen a una zona y pueden asociarse a un sitio.
@@ -25,11 +27,12 @@ export class NegocioService {
   ) {}
 
   // Valida la zona y, si se indicó, que el sitio exista y pertenezca a esa zona.
-  async create(dto: CreateNegocioDto): Promise<Negocio> {
+  async create(dto: CreateNegocioDto, user: User): Promise<Negocio> {
     await this.validateReferences(dto.idZona, dto.idSitio);
     return await this.negocioRepository.save(
       this.negocioRepository.create({
         ...dto,
+        idUsuario: user.id,
         idSitio: dto.idSitio ?? null,
         latitud: String(dto.latitud),
         longitud: String(dto.longitud),
@@ -67,11 +70,16 @@ export class NegocioService {
   }
 
   // Actualiza el negocio y valida la zona y el sitio opcional resultantes.
-  async update(id: number, dto: UpdateNegocioDto): Promise<Negocio> {
+  async update(
+    id: number,
+    dto: UpdateNegocioDto,
+    user: User,
+  ): Promise<Negocio> {
     const negocio = await this.negocioRepository.findOneBy({ idNegocio: id });
     if (!negocio) {
       throw new NotFoundException(`Negocio con ID ${id} no encontrado`);
     }
+    this.assertOwner(negocio, user);
     const idZona = dto.idZona ?? negocio.idZona;
     const idSitio = dto.idSitio === undefined ? negocio.idSitio : dto.idSitio;
     await this.validateReferences(idZona, idSitio);
@@ -86,12 +94,19 @@ export class NegocioService {
   }
 
   // Elimina el negocio indicado.
-  async remove(id: number): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
     const negocio = await this.negocioRepository.findOneBy({ idNegocio: id });
     if (!negocio) {
       throw new NotFoundException(`Negocio con ID ${id} no encontrado`);
     }
+    this.assertOwner(negocio, user);
     await this.negocioRepository.remove(negocio);
+  }
+
+  private assertOwner(negocio: Negocio, user: User): void {
+    if (user.role !== UserRole.Admin && negocio.idUsuario !== user.id) {
+      throw new ForbiddenException('No eres propietario de este negocio');
+    }
   }
 
   // Confirma que la zona exista y que el sitio opcional pertenezca a esa zona.

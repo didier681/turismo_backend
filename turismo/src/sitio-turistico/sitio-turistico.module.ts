@@ -4,9 +4,10 @@ import { SitioTuristico } from './entities/sitio-turistico.entity';
 import { Zona } from '../zona/entities/zona.entity';
 import { SitioTuristicoController } from './sitio-turistico.controller';
 import { SitioTuristicoService } from './sitio-turistico.service';
+import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SitioTuristico, Zona])],
+  imports: [TypeOrmModule.forFeature([SitioTuristico, Zona, GestorZona])],
   controllers: [SitioTuristicoController],
   providers: [SitioTuristicoService],
   exports: [SitioTuristicoService],

@@ -10,6 +10,7 @@ import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.e
 import { NegocioCategoria } from '../../negocio-categoria/entities/negocio-categoria.entity';
 import { Servicio } from '../../servicio/entities/servicio.entity';
 import { Zona } from '../../zona/entities/zona.entity';
+import { User } from '../../user/entities/user.entity';
 
 // Niveles de membresía permitidos para un negocio.
 export enum EstadoMembresia {
@@ -24,6 +25,14 @@ export class Negocio {
   // Identificador único del negocio.
   @PrimaryGeneratedColumn({ name: 'id_negocio' })
   idNegocio: number;
+
+  // Usuario propietario del negocio.
+  @Column({ type: 'int', name: 'id_usuario' })
+  idUsuario: number;
+
+  @ManyToOne(() => User, (usuario) => usuario.negocios, { nullable: false })
+  @JoinColumn({ name: 'id_usuario', referencedColumnName: 'id' })
+  usuario: User;
 
   // Clave foránea obligatoria de la zona a la que pertenece el negocio.
   @Column({ type: 'int', name: 'id_zona' })

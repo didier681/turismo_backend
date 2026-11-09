@@ -10,14 +10,6 @@ import { ApiProperty } from '@nestjs/swagger';
 // Datos de entrada de una reseña; la calificación queda limitada de 1 a 5.
 export class CreateResenaDto {
   @ApiProperty({
-    description: 'Identificador del usuario que escribe la reseña.',
-    example: 1,
-  })
-  @IsInt()
-  @Min(1)
-  idUsuario: number;
-
-  @ApiProperty({
     description: 'Identificador del sitio turístico reseñado.',
     example: 4,
   })

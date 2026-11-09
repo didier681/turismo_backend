@@ -10,8 +10,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { User } from '../user/entities/user.entity';
 import { CreateMultimediaDto } from './dto/create-multimedia.dto';
 import { UpdateMultimediaDto } from './dto/update-multimedia.dto';
 import {
@@ -29,8 +35,14 @@ export class MultimediaController {
 
   // Crea contenido multimedia con los datos validados de la solicitud.
   @Post()
-  create(@Body() dto: CreateMultimediaDto): Promise<Multimedia> {
-    return this.multimediaService.create(dto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
+  create(
+    @Body() dto: CreateMultimediaDto,
+    @GetUser() user: User,
+  ): Promise<Multimedia> {
+    return this.multimediaService.create(dto, user);
   }
 
   // Devuelve todo el contenido multimedia ordenado por su posición.
@@ -57,17 +69,27 @@ export class MultimediaController {
 
   // Actualiza parcialmente el contenido multimedia indicado.
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMultimediaDto,
+    @GetUser() user: User,
   ): Promise<Multimedia> {
-    return this.multimediaService.update(id, dto);
+    return this.multimediaService.update(id, dto, user);
   }
 
   // Elimina el registro multimedia indicado y responde sin contenido.
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.multimediaService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    return this.multimediaService.remove(id, user);
   }
 }

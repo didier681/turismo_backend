@@ -1,15 +1,17 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CategoriaNegocio } from '../categoria-negocio/entities/categoria-negocio.entity';
 import { Negocio } from '../negocio/entities/negocio.entity';
 import { CreateNegocioCategoriaDto } from './dto/create-negocio-categoria.dto';
 import { UpdateNegocioCategoriaDto } from './dto/update-negocio-categoria.dto';
 import { NegocioCategoria } from './entities/negocio-categoria.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 
 @Injectable()
 // Administra la asociación N:M entre negocios y categorías.
@@ -22,7 +24,11 @@ export class NegocioCategoriaService {
   ) {}
 
   // Valida ambas referencias y evita duplicar la pareja negocio-categoría.
-  async create(dto: CreateNegocioCategoriaDto): Promise<NegocioCategoria> {
+  async create(
+    dto: CreateNegocioCategoriaDto,
+    user: User,
+  ): Promise<NegocioCategoria> {
+    await this.assertOwner(dto.idNegocio, user);
     const [negocioExists, categoriaExists] = await Promise.all([
       this.dataSource.getRepository(Negocio).existsBy({
         idNegocio: dto.idNegocio,
@@ -85,6 +91,7 @@ export class NegocioCategoriaService {
     idNegocio: number,
     idCategoriaNeg: number,
     dto: UpdateNegocioCategoriaDto,
+    user: User,
   ): Promise<NegocioCategoria> {
     const nextIdNegocio = dto.idNegocio ?? idNegocio;
     const nextIdCategoriaNeg = dto.idCategoriaNeg ?? idCategoriaNeg;
@@ -97,6 +104,8 @@ export class NegocioCategoriaService {
           'Asociación negocio-categoría no encontrada',
         );
       }
+      await this.assertOwner(idNegocio, user, manager);
+      await this.assertOwner(nextIdNegocio, user, manager);
       if (
         nextIdNegocio === idNegocio &&
         nextIdCategoriaNeg === idCategoriaNeg
@@ -154,7 +163,11 @@ export class NegocioCategoriaService {
   }
 
   // Elimina la relación sin borrar el negocio ni la categoría.
-  async remove(idNegocio: number, idCategoriaNeg: number): Promise<void> {
+  async remove(
+    idNegocio: number,
+    idCategoriaNeg: number,
+    user: User,
+  ): Promise<void> {
     const asociacion = await this.asociacionRepository.findOneBy({
       idNegocio,
       idCategoriaNeg,
@@ -164,6 +177,26 @@ export class NegocioCategoriaService {
         'Asociación negocio-categoría no encontrada',
       );
     }
+    await this.assertOwner(idNegocio, user);
     await this.asociacionRepository.remove(asociacion);
+  }
+
+  private async assertOwner(
+    idNegocio: number,
+    user: User,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const repository = manager
+      ? manager.getRepository(Negocio)
+      : this.dataSource.getRepository(Negocio);
+    const negocio = await repository.findOneBy({ idNegocio });
+    if (!negocio) {
+      throw new NotFoundException(
+        `Negocio con ID ${idNegocio} no encontrado`,
+      );
+    }
+    if (user.role !== UserRole.Admin && negocio.idUsuario !== user.id) {
+      throw new ForbiddenException('No eres propietario de este negocio');
+    }
   }
 }

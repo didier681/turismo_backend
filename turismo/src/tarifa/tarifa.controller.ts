@@ -9,8 +9,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { User } from '../user/entities/user.entity';
 import { CreateTarifaDto } from './dto/create-tarifa.dto';
 import { UpdateTarifaDto } from './dto/update-tarifa.dto';
 import { Tarifa } from './entities/tarifa.entity';
@@ -25,8 +31,14 @@ export class TarifaController {
 
   // Crea una tarifa con los datos validados de la solicitud.
   @Post()
-  create(@Body() dto: CreateTarifaDto): Promise<Tarifa> {
-    return this.tarifaService.create(dto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
+  create(
+    @Body() dto: CreateTarifaDto,
+    @GetUser() user: User,
+  ): Promise<Tarifa> {
+    return this.tarifaService.create(dto, user);
   }
 
   // Devuelve todas las tarifas con su servicio asociado.
@@ -43,17 +55,27 @@ export class TarifaController {
 
   // Actualiza parcialmente la tarifa indicada.
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTarifaDto,
+    @GetUser() user: User,
   ): Promise<Tarifa> {
-    return this.tarifaService.update(id, dto);
+    return this.tarifaService.update(id, dto, user);
   }
 
   // Elimina la tarifa indicada y responde sin contenido.
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.tarifaService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    return this.tarifaService.remove(id, user);
   }
 }

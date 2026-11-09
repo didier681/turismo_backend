@@ -9,8 +9,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { User } from '../user/entities/user.entity';
 import { CreateFavoritoDto } from './dto/create-favorito.dto';
 import { UpdateFavoritoDto } from './dto/update-favorito.dto';
 import { Favorito } from './entities/favorito.entity';
@@ -23,16 +27,25 @@ export class FavoritoController {
   constructor(private readonly favoritoService: FavoritoService) {}
 
   @Post()
-  create(@Body() dto: CreateFavoritoDto): Promise<Favorito> {
-    return this.favoritoService.create(dto);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  create(
+    @Body() dto: CreateFavoritoDto,
+    @GetUser() user: User,
+  ): Promise<Favorito> {
+    return this.favoritoService.create(dto, user);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   findAll(): Promise<Favorito[]> {
     return this.favoritoService.findAll();
   }
 
   @Get(':idUsuario/:idSitio')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   findOne(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
     @Param('idSitio', ParseIntPipe) idSitio: number,
@@ -40,21 +53,25 @@ export class FavoritoController {
     return this.favoritoService.findOne(idUsuario, idSitio);
   }
 
-  @Patch(':idUsuario/:idSitio')
+  @Patch(':idSitio')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   update(
-    @Param('idUsuario', ParseIntPipe) idUsuario: number,
     @Param('idSitio', ParseIntPipe) idSitio: number,
     @Body() dto: UpdateFavoritoDto,
+    @GetUser() user: User,
   ): Promise<Favorito> {
-    return this.favoritoService.update(idUsuario, idSitio, dto);
+    return this.favoritoService.update(idSitio, dto, user);
   }
 
-  @Delete(':idUsuario/:idSitio')
+  @Delete(':idSitio')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
-    @Param('idUsuario', ParseIntPipe) idUsuario: number,
     @Param('idSitio', ParseIntPipe) idSitio: number,
+    @GetUser() user: User,
   ): Promise<void> {
-    return this.favoritoService.remove(idUsuario, idSitio);
+    return this.favoritoService.remove(idSitio, user);
   }
 }

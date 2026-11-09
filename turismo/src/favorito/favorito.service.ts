@@ -26,17 +26,20 @@ export class FavoritoService {
 
   // Evita favoritos duplicados y comprueba que usuario y sitio existan.
   // Guarda una pareja usuario-sitio única tras validar sus referencias.
-  async create(dto: CreateFavoritoDto): Promise<Favorito> {
-    await this.validateReferences(dto.idUsuario, dto.idSitio);
+  async create(dto: CreateFavoritoDto, user: User): Promise<Favorito> {
+    await this.validateReferences(user.id, dto.idSitio);
     const exists = await this.favoritoRepository.existsBy({
-      idUsuario: dto.idUsuario,
+      idUsuario: user.id,
       idSitio: dto.idSitio,
     });
     if (exists) {
       throw new ConflictException('El sitio ya está guardado en favoritos');
     }
     return await this.favoritoRepository.save(
-      this.favoritoRepository.create(dto),
+      this.favoritoRepository.create({
+        idUsuario: user.id,
+        idSitio: dto.idSitio,
+      }),
     );
   }
 
@@ -62,11 +65,11 @@ export class FavoritoService {
   // Actualiza la pareja de claves de forma atómica y sin crear duplicados.
   // Sustituye la clave compuesta dentro de una transacción.
   async update(
-    idUsuario: number,
     idSitio: number,
     dto: UpdateFavoritoDto,
+    user: User,
   ): Promise<Favorito> {
-    const nextIdUsuario = dto.idUsuario ?? idUsuario;
+    const idUsuario = user.id;
     const nextIdSitio = dto.idSitio ?? idSitio;
 
     return await this.dataSource.transaction(async (manager) => {
@@ -76,13 +79,13 @@ export class FavoritoService {
         throw new NotFoundException('Favorito no encontrado');
       }
 
-      if (nextIdUsuario === idUsuario && nextIdSitio === idSitio) {
+      if (nextIdSitio === idSitio) {
         return current;
       }
 
-      await this.validateReferences(nextIdUsuario, nextIdSitio, manager);
+      await this.validateReferences(idUsuario, nextIdSitio, manager);
       const duplicate = await repository.existsBy({
-        idUsuario: nextIdUsuario,
+        idUsuario,
         idSitio: nextIdSitio,
       });
       if (duplicate) {
@@ -91,22 +94,22 @@ export class FavoritoService {
 
       await repository.save(
         repository.create({
-          idUsuario: nextIdUsuario,
+          idUsuario,
           idSitio: nextIdSitio,
         }),
       );
       await repository.remove(current);
       return await repository.findOneByOrFail({
-        idUsuario: nextIdUsuario,
+        idUsuario,
         idSitio: nextIdSitio,
       });
     });
   }
 
   // Elimina el favorito identificado por sus dos claves.
-  async remove(idUsuario: number, idSitio: number): Promise<void> {
+  async remove(idSitio: number, user: User): Promise<void> {
     const favorito = await this.favoritoRepository.findOneBy({
-      idUsuario,
+      idUsuario: user.id,
       idSitio,
     });
     if (!favorito) {

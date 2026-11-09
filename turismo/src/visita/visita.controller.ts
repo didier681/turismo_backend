@@ -9,8 +9,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { User } from '../user/entities/user.entity';
 import { CreateVisitaDto } from './dto/create-visita.dto';
 import { UpdateVisitaDto } from './dto/update-visita.dto';
 import { Visita } from './entities/visita.entity';
@@ -18,13 +22,18 @@ import { VisitaService } from './visita.service';
 
 @Controller('visitas')
 @ApiTags('Visita')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 // Expone los endpoints para registrar y consultar visitas.
 export class VisitaController {
   constructor(private readonly visitaService: VisitaService) {}
 
   @Post()
-  create(@Body() dto: CreateVisitaDto): Promise<Visita> {
-    return this.visitaService.create(dto);
+  create(
+    @Body() dto: CreateVisitaDto,
+    @GetUser() user: User,
+  ): Promise<Visita> {
+    return this.visitaService.create(dto, user);
   }
 
   @Get()
@@ -41,13 +50,17 @@ export class VisitaController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateVisitaDto,
+    @GetUser() user: User,
   ): Promise<Visita> {
-    return this.visitaService.update(id, dto);
+    return this.visitaService.update(id, dto, user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.visitaService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    return this.visitaService.remove(id, user);
   }
 }

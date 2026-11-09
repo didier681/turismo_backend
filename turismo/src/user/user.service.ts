@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   ConflictException,
   NotFoundException,
@@ -9,6 +10,10 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateGestorDto } from './dto/create-gestor.dto';
+import { AssignGestorZonasDto } from './dto/assign-gestor-zonas.dto';
+import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
+import { Zona } from '../zona/entities/zona.entity';
 
 @Injectable()
 // Contiene las reglas de negocio y el acceso a persistencia de usuarios.
@@ -20,20 +25,25 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(GestorZona)
+    private readonly gestorZonaRepository: Repository<GestorZona>,
+    @InjectRepository(Zona)
+    private readonly zonaRepository: Repository<Zona>,
   ) {}
 
   /**
    * Crea una cuenta, comprueba el correo y guarda la contraseña como hash.
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Impide crear dos cuentas con el mismo correo.
-    const emailTaken: boolean = await this.userRepository.existsBy({
-      email: createUserDto.email,
-    });
-
-    if (emailTaken) {
-      throw new ConflictException('El email ya está registrado');
+    if (createUserDto.role === UserRole.Gestor) {
+      throw new BadRequestException(
+        'Los gestores deben crearse mediante POST /users/gestores',
+      );
     }
+    await this.assertIdentityAvailable(
+      createUserDto.email,
+      createUserDto.documentoIdentidad,
+    );
 
     // Nunca se persiste la contraseña recibida en texto plano.
     const hashedPassword: string = await bcrypt.hash(
@@ -48,9 +58,75 @@ export class UserService {
       idiomaPref: createUserDto.idiomaPref,
       passwordHash: hashedPassword,
       role: createUserDto.role ?? UserRole.Usuario,
+      documentoIdentidad: createUserDto.documentoIdentidad ?? null,
+      soporteUrl: createUserDto.soporteUrl ?? null,
     });
 
     // Persiste la cuenta y devuelve la entidad creada.
+    return await this.userRepository.save(user);
+  }
+
+  // Crea un gestor inactivo; el administrador debe activarlo explícitamente.
+  async createGestor(createGestorDto: CreateGestorDto): Promise<User> {
+    await this.assertIdentityAvailable(
+      createGestorDto.email,
+      createGestorDto.documentoIdentidad,
+    );
+    const user = this.userRepository.create({
+      email: createGestorDto.email,
+      nombre: createGestorDto.nombre,
+      idiomaPref: createGestorDto.idiomaPref,
+      passwordHash: await bcrypt.hash(
+        createGestorDto.password,
+        this.saltRounds,
+      ),
+      documentoIdentidad: createGestorDto.documentoIdentidad,
+      soporteUrl: createGestorDto.soporteUrl ?? null,
+      role: UserRole.Gestor,
+      isActive: false,
+    });
+    return await this.userRepository.save(user);
+  }
+
+  // Añade zonas a un gestor y evita crear asignaciones duplicadas.
+  async assignZonas(
+    idUsuario: number,
+    dto: AssignGestorZonasDto,
+  ): Promise<GestorZona[]> {
+    const user = await this.findOne(idUsuario);
+    if (user.role !== UserRole.Gestor) {
+      throw new BadRequestException(
+        'Las zonas solo pueden asignarse a usuarios con rol gestor',
+      );
+    }
+
+    const zonasExistentes = await this.zonaRepository.findBy(
+      dto.idZonas.map((idZona) => ({ idZona })),
+    );
+    if (zonasExistentes.length !== dto.idZonas.length) {
+      const existentes = new Set(zonasExistentes.map((zona) => zona.idZona));
+      const idInexistente = dto.idZonas.find(
+        (idZona) => !existentes.has(idZona),
+      );
+      throw new NotFoundException(`Zona con ID ${idInexistente} no encontrada`);
+    }
+
+    return await this.gestorZonaRepository.save(
+      dto.idZonas.map((idZona) =>
+        this.gestorZonaRepository.create({ idUsuario, idZona }),
+      ),
+    );
+  }
+
+  // Activa la cuenta de un gestor tras la aprobación administrativa.
+  async activate(id: number): Promise<User> {
+    const user = await this.findOne(id);
+    if (user.role !== UserRole.Gestor) {
+      throw new BadRequestException(
+        'Solo pueden activarse cuentas con rol gestor mediante esta ruta',
+      );
+    }
+    user.isActive = true;
     return await this.userRepository.save(user);
   }
 
@@ -105,6 +181,23 @@ export class UserService {
    */
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user: User = await this.findOne(id);
+    if (
+      updateUserDto.role === UserRole.Gestor &&
+      user.role !== UserRole.Gestor
+    ) {
+      throw new BadRequestException(
+        'Los gestores deben crearse mediante POST /users/gestores',
+      );
+    }
+    const documentoIdentidad =
+      updateUserDto.documentoIdentidad === undefined
+        ? user.documentoIdentidad
+        : updateUserDto.documentoIdentidad;
+    if (user.role === UserRole.Gestor && !documentoIdentidad) {
+      throw new BadRequestException(
+        'El documento de identidad es obligatorio para los gestores',
+      );
+    }
 
     // Evita asignar un correo que ya pertenezca a otra cuenta.
     if (updateUserDto.email && updateUserDto.email !== user.email) {
@@ -114,6 +207,17 @@ export class UserService {
       if (emailTaken) {
         throw new ConflictException('El email ya está registrado');
       }
+    }
+    if (
+      updateUserDto.documentoIdentidad &&
+      updateUserDto.documentoIdentidad !== user.documentoIdentidad &&
+      (await this.userRepository.existsBy({
+        documentoIdentidad: updateUserDto.documentoIdentidad,
+      }))
+    ) {
+      throw new ConflictException(
+        'El documento de identidad ya está registrado',
+      );
     }
 
     // Separa la contraseña para no copiarla en texto plano a la entidad.
@@ -131,6 +235,21 @@ export class UserService {
     }
 
     return await this.userRepository.save(user);
+  }
+
+  private async assertIdentityAvailable(
+    email: string,
+    documentoIdentidad?: string,
+  ): Promise<void> {
+    if (await this.userRepository.existsBy({ email })) {
+      throw new ConflictException('El email ya está registrado');
+    }
+    if (
+      documentoIdentidad &&
+      (await this.userRepository.existsBy({ documentoIdentidad }))
+    ) {
+      throw new ConflictException('El documento de identidad ya está registrado');
+    }
   }
 
   /**

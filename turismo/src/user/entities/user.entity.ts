@@ -9,12 +9,15 @@ import { Exclude } from 'class-transformer';
 import { Visita } from '../../visita/entities/visita.entity';
 import { Favorito } from '../../favorito/entities/favorito.entity';
 import { Resena } from '../../resena/entities/resena.entity';
+import { Negocio } from '../../negocio/entities/negocio.entity';
+import { GestorZona } from '../../gestor-zona/entities/gestor-zona.entity';
 
 // Roles disponibles para controlar el acceso a las funciones de la plataforma.
 export enum UserRole {
   Admin = 'admin',
   Usuario = 'usuario',
   Negocio = 'negocio',
+  Gestor = 'gestor',
 }
 
 // Representa al usuario y conserva los datos requeridos por autenticación y turismo.
@@ -27,6 +30,25 @@ export class User {
   // Correo único utilizado para identificar la cuenta durante el inicio de sesión.
   @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
   email: string;
+
+  // Documento único opcional para turistas y obligatorio para gestores.
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'documento_identidad',
+    unique: true,
+    nullable: true,
+  })
+  documentoIdentidad: string | null;
+
+  // URL opcional del soporte entregado por un gestor.
+  @Column({
+    type: 'varchar',
+    length: 255,
+    name: 'soporte_url',
+    nullable: true,
+  })
+  soporteUrl: string | null;
 
   // Hash de la contraseña; se carga para autenticar y se excluye de las respuestas.
   @Exclude()
@@ -75,4 +97,12 @@ export class User {
   // Reseñas de sitios turísticos escritas por este usuario.
   @OneToMany(() => Resena, (resena) => resena.usuario)
   resenas: Resena[];
+
+  // Negocios registrados por este usuario.
+  @OneToMany(() => Negocio, (negocio) => negocio.usuario)
+  negocios: Negocio[];
+
+  // Zonas asignadas a este gestor.
+  @OneToMany(() => GestorZona, (gestorZona) => gestorZona.usuario)
+  zonasAsignadas: GestorZona[];
 }

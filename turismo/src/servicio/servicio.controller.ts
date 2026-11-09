@@ -9,8 +9,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { User } from '../user/entities/user.entity';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { Servicio } from './entities/servicio.entity';
@@ -25,8 +31,14 @@ export class ServicioController {
 
   // Crea un servicio con los datos validados de la solicitud.
   @Post()
-  create(@Body() dto: CreateServicioDto): Promise<Servicio> {
-    return this.servicioService.create(dto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
+  create(
+    @Body() dto: CreateServicioDto,
+    @GetUser() user: User,
+  ): Promise<Servicio> {
+    return this.servicioService.create(dto, user);
   }
 
   // Devuelve todos los servicios con su negocio y tarifas.
@@ -43,17 +55,27 @@ export class ServicioController {
 
   // Actualiza parcialmente el servicio indicado.
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateServicioDto,
+    @GetUser() user: User,
   ): Promise<Servicio> {
-    return this.servicioService.update(id, dto);
+    return this.servicioService.update(id, dto, user);
   }
 
   // Elimina el servicio indicado y responde sin contenido.
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('negocio', 'admin')
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.servicioService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    return this.servicioService.remove(id, user);
   }
 }

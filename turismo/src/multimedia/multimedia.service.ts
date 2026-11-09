@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Negocio } from '../negocio/entities/negocio.entity';
@@ -10,6 +15,7 @@ import {
   TipoContenidoMultimedia,
   TipoEntidadMultimedia,
 } from './entities/multimedia.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 
 @Injectable()
 // Gestiona contenido multimedia y valida su entidad polimórfica y formato.
@@ -25,8 +31,8 @@ export class MultimediaService {
   ) {}
 
   // Valida la referencia y el contenido antes de crear el registro.
-  async create(dto: CreateMultimediaDto): Promise<Multimedia> {
-    await this.validateEntidad(dto.tipoEntidad, dto.idEntidad);
+  async create(dto: CreateMultimediaDto, user: User): Promise<Multimedia> {
+    await this.validateEntidad(dto.tipoEntidad, dto.idEntidad, user);
     this.validateContenido(
       dto.tipoContenido,
       dto.urlContenido,
@@ -70,13 +76,22 @@ export class MultimediaService {
   }
 
   // Actualiza el registro validando las referencias y el contenido resultantes.
-  async update(id: number, dto: UpdateMultimediaDto): Promise<Multimedia> {
+  async update(
+    id: number,
+    dto: UpdateMultimediaDto,
+    user: User,
+  ): Promise<Multimedia> {
     const multimedia = await this.multimediaRepository.findOneBy({
       idMultimedia: id,
     });
     if (!multimedia) {
       throw new NotFoundException(`Multimedia con ID ${id} no encontrada`);
     }
+    await this.validateEntidad(
+      multimedia.tipoEntidad,
+      multimedia.idEntidad,
+      user,
+    );
 
     const tipoEntidad = dto.tipoEntidad ?? multimedia.tipoEntidad;
     const idEntidad = dto.idEntidad ?? multimedia.idEntidad;
@@ -90,7 +105,7 @@ export class MultimediaService {
         ? multimedia.textoContenido
         : dto.textoContenido;
 
-    await this.validateEntidad(tipoEntidad, idEntidad);
+    await this.validateEntidad(tipoEntidad, idEntidad, user);
     this.validateContenido(tipoContenido, urlContenido, textoContenido);
     this.multimediaRepository.merge(multimedia, {
       ...dto,
@@ -103,13 +118,18 @@ export class MultimediaService {
   }
 
   // Elimina el registro multimedia indicado.
-  async remove(id: number): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
     const multimedia = await this.multimediaRepository.findOneBy({
       idMultimedia: id,
     });
     if (!multimedia) {
       throw new NotFoundException(`Multimedia con ID ${id} no encontrada`);
     }
+    await this.validateEntidad(
+      multimedia.tipoEntidad,
+      multimedia.idEntidad,
+      user,
+    );
     await this.multimediaRepository.remove(multimedia);
   }
 
@@ -117,19 +137,37 @@ export class MultimediaService {
   private async validateEntidad(
     tipoEntidad: TipoEntidadMultimedia,
     idEntidad: number,
+    user?: User,
   ): Promise<void> {
-    const exists =
-      tipoEntidad === TipoEntidadMultimedia.Sitio
-        ? await this.sitioRepository.existsBy({ idSitio: idEntidad })
-        : await this.negocioRepository.existsBy({ idNegocio: idEntidad });
-    if (!exists) {
-      const nombreEntidad =
-        tipoEntidad === TipoEntidadMultimedia.Sitio
-          ? 'Sitio turístico'
-          : 'Negocio';
+    if (tipoEntidad === TipoEntidadMultimedia.Sitio) {
+      const exists = await this.sitioRepository.existsBy({ idSitio: idEntidad });
+      if (!exists) {
+        throw new NotFoundException(
+          `Sitio turístico con ID ${idEntidad} no encontrado`,
+        );
+      }
+      if (user && user.role !== UserRole.Admin) {
+        throw new ForbiddenException(
+          'Solo un administrador puede gestionar multimedia de sitios',
+        );
+      }
+      return;
+    }
+
+    const negocio = await this.negocioRepository.findOneBy({
+      idNegocio: idEntidad,
+    });
+    if (!negocio) {
       throw new NotFoundException(
-        `${nombreEntidad} con ID ${idEntidad} no encontrado`,
+        `Negocio con ID ${idEntidad} no encontrado`,
       );
+    }
+    if (
+      user &&
+      user.role !== UserRole.Admin &&
+      negocio.idUsuario !== user.id
+    ) {
+      throw new ForbiddenException('No eres propietario de este negocio');
     }
   }
 

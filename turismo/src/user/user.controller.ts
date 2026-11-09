@@ -15,6 +15,9 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateGestorDto } from './dto/create-gestor.dto';
+import { AssignGestorZonasDto } from './dto/assign-gestor-zonas.dto';
+import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
 import { User } from './entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -34,6 +37,19 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @Post('gestores')
+  createGestor(@Body() dto: CreateGestorDto): Promise<User> {
+    return this.userService.createGestor(dto);
+  }
+
+  @Post(':id/zonas')
+  assignZonas(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AssignGestorZonasDto,
+  ): Promise<GestorZona[]> {
+    return this.userService.assignZonas(id, dto);
+  }
+
   @Get()
   findAll(): Promise<User[]> {
     return this.userService.findAll();
@@ -50,6 +66,11 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<User> {
     return this.userService.update(id, updateUserDto);
+  }
+
+  @Patch(':id/activar')
+  activate(@Param('id', ParseIntPipe) id: number): Promise<User> {
+    return this.userService.activate(id);
   }
 
   @Delete(':id')

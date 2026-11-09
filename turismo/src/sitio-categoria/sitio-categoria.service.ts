@@ -1,15 +1,18 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CategoriaSitio } from '../categoria-sitio/entities/categoria-sitio.entity';
 import { SitioCategoria } from './entities/sitio-categoria.entity';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
 import { CreateSitioCategoriaDto } from './dto/create-sitio-categoria.dto';
 import { UpdateSitioCategoriaDto } from './dto/update-sitio-categoria.dto';
+import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 
 @Injectable()
 // Administra la asociación N:M entre sitios y categorías.
@@ -21,7 +24,11 @@ export class SitioCategoriaService {
   ) {}
 
   // Verifica ambas referencias y evita repetir la pareja sitio-categoría.
-  async create(dto: CreateSitioCategoriaDto): Promise<SitioCategoria> {
+  async create(
+    dto: CreateSitioCategoriaDto,
+    user: User,
+  ): Promise<SitioCategoria> {
+    await this.assertCanManageSite(dto.idSitio, user);
     const [sitioExists, categoriaExists] = await Promise.all([
       this.dataSource.getRepository(SitioTuristico).existsBy({
         idSitio: dto.idSitio,
@@ -77,6 +84,7 @@ export class SitioCategoriaService {
     idSitio: number,
     idCategoria: number,
     dto: UpdateSitioCategoriaDto,
+    user: User,
   ): Promise<SitioCategoria> {
     const nextIdSitio = dto.idSitio ?? idSitio;
     const nextIdCategoria = dto.idCategoria ?? idCategoria;
@@ -87,6 +95,8 @@ export class SitioCategoriaService {
       if (!current) {
         throw new NotFoundException('Asociación sitio-categoría no encontrada');
       }
+      await this.assertCanManageSite(idSitio, user, manager);
+      await this.assertCanManageSite(nextIdSitio, user, manager);
 
       if (nextIdSitio === idSitio && nextIdCategoria === idCategoria) {
         return current;
@@ -135,7 +145,11 @@ export class SitioCategoriaService {
   }
 
   // Elimina la asociación sin borrar el sitio ni la categoría.
-  async remove(idSitio: number, idCategoria: number): Promise<void> {
+  async remove(
+    idSitio: number,
+    idCategoria: number,
+    user: User,
+  ): Promise<void> {
     const association = await this.sitioCategoriaRepository.findOneBy({
       idSitio,
       idCategoria,
@@ -143,6 +157,33 @@ export class SitioCategoriaService {
     if (!association) {
       throw new NotFoundException('Asociación sitio-categoría no encontrada');
     }
+    await this.assertCanManageSite(idSitio, user);
     await this.sitioCategoriaRepository.remove(association);
+  }
+
+  private async assertCanManageSite(
+    idSitio: number,
+    user: User,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const sitio = await (manager
+      ? manager.getRepository(SitioTuristico)
+      : this.dataSource.getRepository(SitioTuristico)
+    ).findOneBy({ idSitio });
+    if (!sitio) {
+      throw new NotFoundException(
+        `Sitio turístico con ID ${idSitio} no encontrado`,
+      );
+    }
+    if (user.role === UserRole.Admin) {
+      return;
+    }
+    const assigned = await (manager
+      ? manager.getRepository(GestorZona)
+      : this.dataSource.getRepository(GestorZona)
+    ).existsBy({ idUsuario: user.id, idZona: sitio.idZona });
+    if (!assigned) {
+      throw new ForbiddenException('No tienes permisos sobre esta zona');
+    }
   }
 }

@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -27,9 +28,11 @@ export class VisitaService {
   ) {}
 
   // Registra la visita después de validar sus tres referencias.
-  async create(dto: CreateVisitaDto): Promise<Visita> {
-    await this.validateReferences(dto.idUsuario, dto.idZona, dto.idSitio);
-    return await this.visitaRepository.save(this.visitaRepository.create(dto));
+  async create(dto: CreateVisitaDto, user: User): Promise<Visita> {
+    await this.validateReferences(user.id, dto.idZona, dto.idSitio);
+    return await this.visitaRepository.save(
+      this.visitaRepository.create({ ...dto, idUsuario: user.id }),
+    );
   }
 
   // Devuelve las visitas con el usuario, zona y sitio relacionados.
@@ -52,16 +55,20 @@ export class VisitaService {
   }
 
   // Actualiza la visita y vuelve a validar las referencias resultantes.
-  async update(id: number, dto: UpdateVisitaDto): Promise<Visita> {
+  async update(
+    id: number,
+    dto: UpdateVisitaDto,
+    user: User,
+  ): Promise<Visita> {
     const visita = await this.visitaRepository.findOneBy({ idVisita: id });
     if (!visita) {
       throw new NotFoundException(`Visita con ID ${id} no encontrada`);
     }
+    this.assertOwner(visita, user);
 
-    const idUsuario = dto.idUsuario ?? visita.idUsuario;
     const idZona = dto.idZona ?? visita.idZona;
     const idSitio = dto.idSitio ?? visita.idSitio;
-    await this.validateReferences(idUsuario, idZona, idSitio);
+    await this.validateReferences(user.id, idZona, idSitio);
 
     this.visitaRepository.merge(visita, dto);
     await this.visitaRepository.save(visita);
@@ -69,12 +76,19 @@ export class VisitaService {
   }
 
   // Elimina la visita indicada.
-  async remove(id: number): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
     const visita = await this.visitaRepository.findOneBy({ idVisita: id });
     if (!visita) {
       throw new NotFoundException(`Visita con ID ${id} no encontrada`);
     }
+    this.assertOwner(visita, user);
     await this.visitaRepository.remove(visita);
+  }
+
+  private assertOwner(visita: Visita, user: User): void {
+    if (visita.idUsuario !== user.id) {
+      throw new ForbiddenException('No puedes modificar la visita de otro usuario');
+    }
   }
 
   // Confirma que las entidades existan y que el sitio pertenezca a la zona.

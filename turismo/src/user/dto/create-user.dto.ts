@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -72,8 +73,31 @@ export class CreateUserDto {
     required: false,
   })
   // Acepta únicamente roles definidos por el modelo.
-  @IsEnum(UserRole, { message: 'El rol debe ser admin, usuario o negocio' })
+  @IsEnum(UserRole, {
+    message: 'El rol debe ser admin, usuario, negocio o gestor',
+  })
   // Permite omitirlo para asignar el rol predeterminado.
   @IsOptional()
   role?: UserRole;
+
+  @ApiProperty({
+    description: 'Documento de identidad, opcional para turistas.',
+    example: '1234567890',
+    required: false,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  @IsOptional()
+  documentoIdentidad?: string;
+
+  @ApiProperty({
+    description: 'URL opcional del soporte entregado por el gestor.',
+    example: 'https://ejemplo.com/soporte.pdf',
+    required: false,
+  })
+  @IsUrl()
+  @MaxLength(255)
+  @IsOptional()
+  soporteUrl?: string;
 }

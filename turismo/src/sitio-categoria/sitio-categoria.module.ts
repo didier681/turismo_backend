@@ -5,6 +5,7 @@ import { SitioCategoria } from './entities/sitio-categoria.entity';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
 import { SitioCategoriaController } from './sitio-categoria.controller';
 import { SitioCategoriaService } from './sitio-categoria.service';
+import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { SitioCategoriaService } from './sitio-categoria.service';
       SitioCategoria,
       SitioTuristico,
       CategoriaSitio,
+      GestorZona,
     ]),
   ],
   controllers: [SitioCategoriaController],

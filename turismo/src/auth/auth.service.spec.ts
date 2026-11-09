@@ -9,6 +9,8 @@ import { RegisterDto } from './dto/register.dto';
 import { UserService } from '../user/user.service';
 import { User, UserRole } from '../user/entities/user.entity';
 import { CreateUserDto } from '../user/dto/create-user.dto';
+import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
+import { Zona } from '../zona/entities/zona.entity';
 
 describe('User registration and authentication', () => {
   let authService: AuthService;
@@ -44,6 +46,14 @@ describe('User registration and authentication', () => {
         UserService,
         {
           provide: getRepositoryToken(User),
+          useValue: repository,
+        },
+        {
+          provide: getRepositoryToken(GestorZona),
+          useValue: repository,
+        },
+        {
+          provide: getRepositoryToken(Zona),
           useValue: repository,
         },
         {
@@ -100,17 +110,21 @@ describe('User registration and authentication', () => {
   });
 
   it('rejects role assignment in public registration and validates roles for user creation', async () => {
-    const registration = plainToInstance(RegisterDto, {
-      email: 'viajero@example.com',
-      password: 'clave-segura-123',
-      nombre: 'Viajero',
-      role: UserRole.Admin,
-    });
-    const registrationErrors = await validate(registration, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-    expect(registrationErrors.map((error) => error.property)).toContain('role');
+    for (const role of [UserRole.Admin, UserRole.Gestor]) {
+      const registration = plainToInstance(RegisterDto, {
+        email: 'viajero@example.com',
+        password: 'clave-segura-123',
+        nombre: 'Viajero',
+        role,
+      });
+      const registrationErrors = await validate(registration, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      expect(registrationErrors.map((error) => error.property)).toContain(
+        'role',
+      );
+    }
 
     const invalidUser = plainToInstance(CreateUserDto, {
       email: 'viajero@example.com',

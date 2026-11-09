@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +11,7 @@ import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.enti
 import { CreatePublicidadDto } from './dto/create-publicidad.dto';
 import { UpdatePublicidadDto } from './dto/update-publicidad.dto';
 import { Publicidad } from './entities/publicidad.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 
 @Injectable()
 // Gestiona publicidades y valida sus referencias y período de vigencia.
@@ -25,8 +27,12 @@ export class PublicidadService {
   ) {}
 
   // Valida las entidades relacionadas y las fechas antes de crear la campaña.
-  async create(dto: CreatePublicidadDto): Promise<Publicidad> {
-    await this.validateReferences(dto.idNegocio, dto.idSitioAsociado);
+  async create(dto: CreatePublicidadDto, user: User): Promise<Publicidad> {
+    await this.validateReferences(
+      dto.idNegocio,
+      dto.idSitioAsociado,
+      user,
+    );
     this.validateFechas(dto.fechaIni, dto.fechaFin);
     return await this.publicidadRepository.save(
       this.publicidadRepository.create({
@@ -57,13 +63,22 @@ export class PublicidadService {
   }
 
   // Actualiza la campaña validando referencias y fechas resultantes.
-  async update(id: number, dto: UpdatePublicidadDto): Promise<Publicidad> {
+  async update(
+    id: number,
+    dto: UpdatePublicidadDto,
+    user: User,
+  ): Promise<Publicidad> {
     const publicidad = await this.publicidadRepository.findOneBy({
       idPublicidad: id,
     });
     if (!publicidad) {
       throw new NotFoundException(`Publicidad con ID ${id} no encontrada`);
     }
+    await this.validateReferences(
+      publicidad.idNegocio,
+      publicidad.idSitioAsociado,
+      user,
+    );
 
     const idNegocio = dto.idNegocio ?? publicidad.idNegocio;
     const idSitioAsociado =
@@ -73,7 +88,7 @@ export class PublicidadService {
     const fechaIni = dto.fechaIni ?? publicidad.fechaIni;
     const fechaFin = dto.fechaFin ?? publicidad.fechaFin;
 
-    await this.validateReferences(idNegocio, idSitioAsociado);
+    await this.validateReferences(idNegocio, idSitioAsociado, user);
     this.validateFechas(fechaIni, fechaFin);
 
     this.publicidadRepository.merge(publicidad, {
@@ -88,13 +103,18 @@ export class PublicidadService {
   }
 
   // Elimina la publicidad indicada.
-  async remove(id: number): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
     const publicidad = await this.publicidadRepository.findOneBy({
       idPublicidad: id,
     });
     if (!publicidad) {
       throw new NotFoundException(`Publicidad con ID ${id} no encontrada`);
     }
+    await this.validateReferences(
+      publicidad.idNegocio,
+      publicidad.idSitioAsociado,
+      user,
+    );
     await this.publicidadRepository.remove(publicidad);
   }
 
@@ -102,10 +122,14 @@ export class PublicidadService {
   private async validateReferences(
     idNegocio: number,
     idSitioAsociado: number | null | undefined,
+    user: User,
   ): Promise<void> {
-    const negocioExists = await this.negocioRepository.existsBy({ idNegocio });
-    if (!negocioExists) {
+    const negocio = await this.negocioRepository.findOneBy({ idNegocio });
+    if (!negocio) {
       throw new NotFoundException(`Negocio con ID ${idNegocio} no encontrado`);
+    }
+    if (user.role !== UserRole.Admin && negocio.idUsuario !== user.id) {
+      throw new ForbiddenException('No eres propietario de este negocio');
     }
     if (idSitioAsociado !== null && idSitioAsociado !== undefined) {
       const sitioExists = await this.sitioRepository.existsBy({

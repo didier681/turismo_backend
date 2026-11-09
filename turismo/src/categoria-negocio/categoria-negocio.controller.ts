@@ -9,8 +9,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateCategoriaNegocioDto } from './dto/create-categoria-negocio.dto';
 import { UpdateCategoriaNegocioDto } from './dto/update-categoria-negocio.dto';
 import { CategoriaNegocio } from './entities/categoria-negocio.entity';
@@ -25,6 +29,9 @@ export class CategoriaNegocioController {
 
   // Crea una categoría con los datos validados del cuerpo de la solicitud.
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   create(
     @Body() dto: CreateCategoriaNegocioDto,
   ): Promise<CategoriaNegocio> {
@@ -45,6 +52,9 @@ export class CategoriaNegocioController {
 
   // Actualiza parcialmente la categoría indicada.
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCategoriaNegocioDto,
@@ -54,6 +64,9 @@ export class CategoriaNegocioController {
 
   // Elimina la categoría indicada y responde sin contenido.
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.categoriaService.remove(id);

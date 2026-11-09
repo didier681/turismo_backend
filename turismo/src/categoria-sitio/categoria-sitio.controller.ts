@@ -9,8 +9,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CategoriaSitio } from './entities/categoria-sitio.entity';
 import { CreateCategoriaSitioDto } from './dto/create-categoria-sitio.dto';
 import { UpdateCategoriaSitioDto } from './dto/update-categoria-sitio.dto';
@@ -23,6 +27,9 @@ export class CategoriaSitioController {
   constructor(private readonly categoriaService: CategoriaSitioService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   create(@Body() dto: CreateCategoriaSitioDto): Promise<CategoriaSitio> {
     return this.categoriaService.create(dto);
   }
@@ -38,6 +45,9 @@ export class CategoriaSitioController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCategoriaSitioDto,
@@ -46,6 +56,9 @@ export class CategoriaSitioController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.categoriaService.remove(id);

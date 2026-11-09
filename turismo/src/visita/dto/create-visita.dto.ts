@@ -6,16 +6,8 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-// Datos de entrada para registrar quién visitó qué sitio y dónde.
+// Datos de entrada para registrar la visita del usuario autenticado.
 export class CreateVisitaDto {
-  @ApiProperty({
-    description: 'Identificador del usuario que realizó la visita.',
-    example: 1,
-  })
-  @IsInt()
-  @Min(1)
-  idUsuario: number;
-
   @ApiProperty({
     description: 'Identificador de la zona geográfica de la visita.',
     example: 2,

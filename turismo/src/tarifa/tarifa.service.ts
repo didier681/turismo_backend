@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +10,8 @@ import { Servicio } from '../servicio/entities/servicio.entity';
 import { CreateTarifaDto } from './dto/create-tarifa.dto';
 import { UpdateTarifaDto } from './dto/update-tarifa.dto';
 import { Tarifa } from './entities/tarifa.entity';
+import { User, UserRole } from '../user/entities/user.entity';
+import { Negocio } from '../negocio/entities/negocio.entity';
 
 @Injectable()
 // Gestiona tarifas, su servicio asociado y la coherencia de su vigencia.
@@ -22,8 +25,8 @@ export class TarifaService {
   ) {}
 
   // Valida el servicio y el período antes de guardar una tarifa.
-  async create(dto: CreateTarifaDto): Promise<Tarifa> {
-    await this.validateServicio(dto.idServicio);
+  async create(dto: CreateTarifaDto, user: User): Promise<Tarifa> {
+    await this.validateServicio(dto.idServicio, user);
     this.validateVigencia(dto.vigenciaIni, dto.vigenciaFin);
     return await this.tarifaRepository.save(
       this.tarifaRepository.create({ ...dto, precio: String(dto.precio) }),
@@ -48,16 +51,24 @@ export class TarifaService {
   }
 
   // Actualiza la tarifa verificando referencias y fechas resultantes.
-  async update(id: number, dto: UpdateTarifaDto): Promise<Tarifa> {
-    const tarifa = await this.tarifaRepository.findOneBy({ idTarifa: id });
+  async update(
+    id: number,
+    dto: UpdateTarifaDto,
+    user: User,
+  ): Promise<Tarifa> {
+    const tarifa = await this.tarifaRepository.findOne({
+      where: { idTarifa: id },
+      relations: { servicio: { negocio: true } },
+    });
     if (!tarifa) {
       throw new NotFoundException(`Tarifa con ID ${id} no encontrada`);
     }
+    this.assertOwner(tarifa.servicio.negocio, user);
     const idServicio = dto.idServicio ?? tarifa.idServicio;
     const vigenciaIni = dto.vigenciaIni ?? tarifa.vigenciaIni;
     const vigenciaFin = dto.vigenciaFin ?? tarifa.vigenciaFin;
     if (dto.idServicio !== undefined) {
-      await this.validateServicio(idServicio);
+      await this.validateServicio(idServicio, user);
     }
     this.validateVigencia(vigenciaIni, vigenciaFin);
 
@@ -70,21 +81,38 @@ export class TarifaService {
   }
 
   // Elimina la tarifa indicada.
-  async remove(id: number): Promise<void> {
-    const tarifa = await this.tarifaRepository.findOneBy({ idTarifa: id });
+  async remove(id: number, user: User): Promise<void> {
+    const tarifa = await this.tarifaRepository.findOne({
+      where: { idTarifa: id },
+      relations: { servicio: { negocio: true } },
+    });
     if (!tarifa) {
       throw new NotFoundException(`Tarifa con ID ${id} no encontrada`);
     }
+    this.assertOwner(tarifa.servicio.negocio, user);
     await this.tarifaRepository.remove(tarifa);
   }
 
   // Confirma que el servicio de destino exista.
-  private async validateServicio(idServicio: number): Promise<void> {
-    const exists = await this.servicioRepository.existsBy({ idServicio });
-    if (!exists) {
+  private async validateServicio(
+    idServicio: number,
+    user: User,
+  ): Promise<void> {
+    const servicio = await this.servicioRepository.findOne({
+      where: { idServicio },
+      relations: { negocio: true },
+    });
+    if (!servicio) {
       throw new NotFoundException(
         `Servicio con ID ${idServicio} no encontrado`,
       );
+    }
+    this.assertOwner(servicio.negocio, user);
+  }
+
+  private assertOwner(negocio: Negocio, user: User): void {
+    if (user.role !== UserRole.Admin && negocio.idUsuario !== user.id) {
+      throw new ForbiddenException('No eres propietario de este negocio');
     }
   }
 

@@ -9,8 +9,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { User } from '../user/entities/user.entity';
 import { CreateResenaDto } from './dto/create-resena.dto';
 import { UpdateResenaDto } from './dto/update-resena.dto';
 import { Resena } from './entities/resena.entity';
@@ -23,8 +27,13 @@ export class ResenaController {
   constructor(private readonly resenaService: ResenaService) {}
 
   @Post()
-  create(@Body() dto: CreateResenaDto): Promise<Resena> {
-    return this.resenaService.create(dto);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  create(
+    @Body() dto: CreateResenaDto,
+    @GetUser() user: User,
+  ): Promise<Resena> {
+    return this.resenaService.create(dto, user);
   }
 
   @Get()
@@ -38,16 +47,24 @@ export class ResenaController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateResenaDto,
+    @GetUser() user: User,
   ): Promise<Resena> {
-    return this.resenaService.update(id, dto);
+    return this.resenaService.update(id, dto, user);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.resenaService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    return this.resenaService.remove(id, user);
   }
 }

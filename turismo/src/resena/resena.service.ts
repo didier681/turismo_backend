@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
@@ -20,9 +24,11 @@ export class ResenaService {
   ) {}
 
   // Crea una reseña tras confirmar la existencia del usuario y del sitio.
-  async create(dto: CreateResenaDto): Promise<Resena> {
-    await this.validateReferences(dto.idUsuario, dto.idSitio);
-    return await this.resenaRepository.save(this.resenaRepository.create(dto));
+  async create(dto: CreateResenaDto, user: User): Promise<Resena> {
+    await this.validateReferences(user.id, dto.idSitio);
+    return await this.resenaRepository.save(
+      this.resenaRepository.create({ ...dto, idUsuario: user.id }),
+    );
   }
 
   // Lista reseñas incluyendo el autor y el sitio reseñado.
@@ -45,15 +51,19 @@ export class ResenaService {
   }
 
   // Actualiza la reseña y valida cualquier cambio de usuario o sitio.
-  async update(id: number, dto: UpdateResenaDto): Promise<Resena> {
+  async update(
+    id: number,
+    dto: UpdateResenaDto,
+    user: User,
+  ): Promise<Resena> {
     const resena = await this.resenaRepository.findOneBy({ idResena: id });
     if (!resena) {
       throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
     }
+    this.assertOwner(resena, user);
 
-    const idUsuario = dto.idUsuario ?? resena.idUsuario;
     const idSitio = dto.idSitio ?? resena.idSitio;
-    await this.validateReferences(idUsuario, idSitio);
+    await this.validateReferences(user.id, idSitio);
 
     this.resenaRepository.merge(resena, dto);
     await this.resenaRepository.save(resena);
@@ -61,12 +71,21 @@ export class ResenaService {
   }
 
   // Elimina la reseña indicada.
-  async remove(id: number): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
     const resena = await this.resenaRepository.findOneBy({ idResena: id });
     if (!resena) {
       throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
     }
+    this.assertOwner(resena, user);
     await this.resenaRepository.remove(resena);
+  }
+
+  private assertOwner(resena: Resena, user: User): void {
+    if (resena.idUsuario !== user.id) {
+      throw new ForbiddenException(
+        'No puedes modificar la reseña de otro usuario',
+      );
+    }
   }
 
   // Confirma que el autor y el sitio existan antes de guardar la reseña.
