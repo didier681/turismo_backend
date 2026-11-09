@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateZonaDto } from './dto/create-zona.dto';
 import { UpdateZonaDto } from './dto/update-zona.dto';
 import { ZonaService } from './zona.service';
 import { Zona } from './entities/zona.entity';
 
 @Controller('zonas')
+@ApiTags('Zona')
 // Expone las operaciones HTTP para administrar zonas.
 export class ZonaController {
   constructor(private readonly zonaService: ZonaService) {}

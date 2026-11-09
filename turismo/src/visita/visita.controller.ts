@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateVisitaDto } from './dto/create-visita.dto';
 import { UpdateVisitaDto } from './dto/update-visita.dto';
 import { Visita } from './entities/visita.entity';
 import { VisitaService } from './visita.service';
 
 @Controller('visitas')
+@ApiTags('Visita')
 // Expone los endpoints para registrar y consultar visitas.
 export class VisitaController {
   constructor(private readonly visitaService: VisitaService) {}

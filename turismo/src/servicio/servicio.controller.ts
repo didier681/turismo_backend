@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { Servicio } from './entities/servicio.entity';
 import { ServicioService } from './servicio.service';
 
 @Controller('servicios')
+@ApiTags('Servicio')
 // Expone las operaciones CRUD de los servicios ofrecidos.
 export class ServicioController {
   // Inyecta el servicio que gestiona los servicios ofrecidos.

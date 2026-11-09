@@ -1,4 +1,4 @@
-import { OmitType } from '@nestjs/mapped-types';
+import { OmitType } from '@nestjs/swagger';
 import { CreateUserDto } from '../../user/dto/create-user.dto';
 
 // El registro reutiliza validaciones y no permite que el cliente asigne su rol.

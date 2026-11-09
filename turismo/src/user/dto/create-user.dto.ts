@@ -7,10 +7,15 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
 
 // Valida los datos permitidos para registrar o crear una cuenta de usuario.
 export class CreateUserDto {
+  @ApiProperty({
+    description: 'Correo electrónico usado para identificar la cuenta.',
+    example: 'usuario@ejemplo.com',
+  })
   // Comprueba que el correo tenga formato válido.
   @IsEmail({}, { message: 'El email debe ser válido' })
   // Exige que el correo esté presente.
@@ -19,6 +24,12 @@ export class CreateUserDto {
   @MaxLength(255)
   email: string;
 
+  @ApiProperty({
+    description: 'Contraseña de la cuenta; entre 6 y 72 caracteres.',
+    example: 'ClaveSegura123',
+    minLength: 6,
+    maxLength: 72,
+  })
   // Rechaza contraseñas que no sean texto.
   @IsString({ message: 'La contraseña debe ser una cadena de texto' })
   // Establece el mínimo requerido para aceptar la contraseña.
@@ -29,6 +40,10 @@ export class CreateUserDto {
   @MaxLength(72, { message: 'La contraseña no puede superar 72 caracteres' })
   password: string;
 
+  @ApiProperty({
+    description: 'Nombre de la persona usuaria.',
+    example: 'María Pérez',
+  })
   // Comprueba que el nombre se reciba como texto.
   @IsString({ message: 'El nombre debe ser una cadena de texto' })
   // Impide crear la cuenta sin nombre.
@@ -37,6 +52,11 @@ export class CreateUserDto {
   @MaxLength(255)
   nombre: string;
 
+  @ApiProperty({
+    description: 'Idioma preferido; si se omite, se aplica el valor predeterminado.',
+    example: 'es',
+    required: false,
+  })
   // Comprueba que el idioma, si se envía, sea texto.
   @IsString()
   // Permite omitirlo para que la entidad aplique el valor predeterminado.
@@ -45,6 +65,12 @@ export class CreateUserDto {
   @MaxLength(10)
   idiomaPref?: string;
 
+  @ApiProperty({
+    description: 'Rol de la cuenta; si se omite, se aplica el rol predeterminado.',
+    enum: UserRole,
+    example: UserRole.Usuario,
+    required: false,
+  })
   // Acepta únicamente roles definidos por el modelo.
   @IsEnum(UserRole, { message: 'El rol debe ser admin, usuario o negocio' })
   // Permite omitirlo para asignar el rol predeterminado.

@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreatePublicidadDto } from './dto/create-publicidad.dto';
 import { UpdatePublicidadDto } from './dto/update-publicidad.dto';
 import { Publicidad } from './entities/publicidad.entity';
 import { PublicidadService } from './publicidad.service';
 
 @Controller('publicidades')
+@ApiTags('Publicidad')
 // Expone las operaciones CRUD de las campañas publicitarias.
 export class PublicidadController {
   // Inyecta el servicio que administra las publicidades.

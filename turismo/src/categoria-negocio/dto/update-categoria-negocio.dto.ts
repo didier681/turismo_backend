@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateCategoriaNegocioDto } from './create-categoria-negocio.dto';
 
 // Permite actualizar parcialmente una categoría de negocio.

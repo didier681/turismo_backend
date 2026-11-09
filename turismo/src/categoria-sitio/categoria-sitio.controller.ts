@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CategoriaSitio } from './entities/categoria-sitio.entity';
 import { CreateCategoriaSitioDto } from './dto/create-categoria-sitio.dto';
 import { UpdateCategoriaSitioDto } from './dto/update-categoria-sitio.dto';
 import { CategoriaSitioService } from './categoria-sitio.service';
 
 @Controller('categorias-sitio')
+@ApiTags('CategoriaSitio')
 // Expone el CRUD de las categorías de sitios.
 export class CategoriaSitioController {
   constructor(private readonly categoriaService: CategoriaSitioService) {}

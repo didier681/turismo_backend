@@ -1,4 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -11,9 +12,11 @@ interface ExampleResponse {
 }
 
 @Controller('example')
+@ApiTags('Example')
 export class ExampleController {
   // Ruta protegida solo con autenticación
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('protected')
   protectedRoute(@GetUser() user: User): ExampleResponse {
     return {
@@ -24,6 +27,7 @@ export class ExampleController {
 
   // Ruta protegida solo para administradores
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @Roles('admin')
   @Get('admin')
   adminRoute(@GetUser() user: User): ExampleResponse {

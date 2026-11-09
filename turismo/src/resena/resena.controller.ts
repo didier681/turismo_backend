@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateResenaDto } from './dto/create-resena.dto';
 import { UpdateResenaDto } from './dto/update-resena.dto';
 import { Resena } from './entities/resena.entity';
 import { ResenaService } from './resena.service';
 
 @Controller('resenas')
+@ApiTags('Resena')
 // Expone las operaciones HTTP para administrar reseñas.
 export class ResenaController {
   constructor(private readonly resenaService: ResenaService) {}

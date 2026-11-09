@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateNegocioCategoriaDto } from './create-negocio-categoria.dto';
 
 // Permite cambiar parcialmente las claves de la asociación.

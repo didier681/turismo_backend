@@ -16,6 +16,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { UnidadTarifa } from '../entities/tarifa.entity';
 
 // Estructura mínima necesaria para comparar las fechas en la validación.
@@ -44,17 +45,30 @@ class VigenciaFinPosteriorConstraint implements ValidatorConstraintInterface {
 // Datos requeridos y validados para registrar una tarifa de servicio.
 export class CreateTarifaDto {
   // Exige el identificador entero positivo del servicio asociado.
+  @ApiProperty({
+    description: 'Identificador del servicio al que pertenece la tarifa.',
+    example: 1,
+  })
   @IsInt()
   @Min(1)
   idServicio: number;
 
   // Exige un nombre no vacío de hasta 255 caracteres.
+  @ApiProperty({
+    description: 'Nombre descriptivo de la tarifa.',
+    example: 'Entrada general',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
   nombreTarifa: string;
 
   // Exige un importe positivo, finito, de hasta dos decimales y dentro del rango decimal.
+  @ApiProperty({
+    description: 'Precio de la tarifa, expresado como un importe mayor que cero.',
+    example: 25000,
+    minimum: 0.01,
+  })
   @IsNumber({
     allowNaN: false,
     allowInfinity: false,
@@ -65,20 +79,38 @@ export class CreateTarifaDto {
   precio: number;
 
   // Permite omitir la moneda; si se indica, debe tener exactamente tres caracteres.
+  @ApiProperty({
+    description: 'Código de moneda de tres caracteres; si se omite, se usa COP.',
+    example: 'COP',
+    required: false,
+  })
   @IsString()
   @Length(3, 3)
   @IsOptional()
   moneda?: string;
 
   // Restringe la unidad a las opciones declaradas en el enum.
+  @ApiProperty({
+    description: 'Unidad sobre la que se calcula el precio.',
+    enum: UnidadTarifa,
+    example: UnidadTarifa.Persona,
+  })
   @IsEnum(UnidadTarifa)
   unidad: UnidadTarifa;
 
   // Exige una fecha ISO válida para el inicio de la vigencia.
+  @ApiProperty({
+    description: 'Fecha desde la que comienza la vigencia, en formato AAAA-MM-DD.',
+    example: '2026-11-03',
+  })
   @IsDateString({ strict: true })
   vigenciaIni: string;
 
   // Exige una fecha ISO válida y que no anteceda a la fecha inicial.
+  @ApiProperty({
+    description: 'Fecha final de vigencia, igual o posterior al inicio.',
+    example: '2026-12-31',
+  })
   @IsDateString({ strict: true })
   @Validate(VigenciaFinPosteriorConstraint)
   vigenciaFin: string;

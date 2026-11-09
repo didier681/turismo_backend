@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateTarifaDto } from './dto/create-tarifa.dto';
 import { UpdateTarifaDto } from './dto/update-tarifa.dto';
 import { Tarifa } from './entities/tarifa.entity';
 import { TarifaService } from './tarifa.service';
 
 @Controller('tarifas')
+@ApiTags('Tarifa')
 // Expone las operaciones CRUD de las tarifas.
 export class TarifaController {
   // Inyecta el servicio que gestiona las tarifas.

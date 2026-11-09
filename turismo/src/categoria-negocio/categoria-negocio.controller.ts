@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateCategoriaNegocioDto } from './dto/create-categoria-negocio.dto';
 import { UpdateCategoriaNegocioDto } from './dto/update-categoria-negocio.dto';
 import { CategoriaNegocio } from './entities/categoria-negocio.entity';
 import { CategoriaNegocioService } from './categoria-negocio.service';
 
 @Controller('categorias-negocio')
+@ApiTags('CategoriaNegocio')
 // Expone las operaciones CRUD de las categorías de negocio.
 export class CategoriaNegocioController {
   // Inyecta el servicio que ejecuta las operaciones de categorías.

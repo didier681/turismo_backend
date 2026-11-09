@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateMultimediaDto } from './dto/create-multimedia.dto';
 import { UpdateMultimediaDto } from './dto/update-multimedia.dto';
 import {
@@ -20,6 +21,7 @@ import {
 import { MultimediaService } from './multimedia.service';
 
 @Controller('multimedia')
+@ApiTags('Multimedia')
 // Expone las operaciones CRUD y consultas de contenido multimedia.
 export class MultimediaController {
   // Inyecta el servicio que administra el contenido multimedia.

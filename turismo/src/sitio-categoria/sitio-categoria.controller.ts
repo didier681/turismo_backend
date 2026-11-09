@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SitioCategoria } from './entities/sitio-categoria.entity';
 import { CreateSitioCategoriaDto } from './dto/create-sitio-categoria.dto';
 import { UpdateSitioCategoriaDto } from './dto/update-sitio-categoria.dto';
 import { SitioCategoriaService } from './sitio-categoria.service';
 
 @Controller('sitio-categoria')
+@ApiTags('SitioCategoria')
 // Expone el CRUD de la relación N:M mediante sus dos claves.
 export class SitioCategoriaController {
   constructor(private readonly associationService: SitioCategoriaService) {}

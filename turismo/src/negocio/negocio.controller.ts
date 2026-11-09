@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateNegocioDto } from './dto/create-negocio.dto';
 import { UpdateNegocioDto } from './dto/update-negocio.dto';
 import { Negocio } from './entities/negocio.entity';
 import { NegocioService } from './negocio.service';
 
 @Controller('negocios')
+@ApiTags('Negocio')
 // Expone las operaciones CRUD de los negocios turísticos.
 export class NegocioController {
   // Inyecta el servicio que gestiona los negocios.

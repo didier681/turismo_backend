@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateServicioDto } from './create-servicio.dto';
 
 // Permite actualizar parcialmente los datos validados de un servicio.

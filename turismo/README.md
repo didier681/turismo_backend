@@ -44,6 +44,11 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## API documentation
+
+With the server running, open Swagger UI at [http://localhost:3000/api/docs](http://localhost:3000/api/docs).
+If the `PORT` environment variable is set, use that port instead of `3000`.
+
 ## Run tests
 
 ```bash

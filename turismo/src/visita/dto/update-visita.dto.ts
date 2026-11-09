@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateVisitaDto } from './create-visita.dto';
 
 // Campos opcionales para corregir los datos de una visita existente.

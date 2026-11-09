@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateFavoritoDto } from './dto/create-favorito.dto';
 import { UpdateFavoritoDto } from './dto/update-favorito.dto';
 import { Favorito } from './entities/favorito.entity';
 import { FavoritoService } from './favorito.service';
 
 @Controller('favoritos')
+@ApiTags('Favorito')
 // Expone operaciones de favoritos identificados por usuario y sitio.
 export class FavoritoController {
   constructor(private readonly favoritoService: FavoritoService) {}

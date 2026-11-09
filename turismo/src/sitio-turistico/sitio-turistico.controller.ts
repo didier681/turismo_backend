@@ -10,12 +10,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SitioTuristico } from './entities/sitio-turistico.entity';
 import { CreateSitioTuristicoDto } from './dto/create-sitio-turistico.dto';
 import { UpdateSitioTuristicoDto } from './dto/update-sitio-turistico.dto';
 import { SitioTuristicoService } from './sitio-turistico.service';
 
 @Controller('sitios-turisticos')
+@ApiTags('SitioTuristico')
 // Expone el CRUD de sitios turísticos mediante la API REST.
 export class SitioTuristicoController {
   constructor(private readonly sitioService: SitioTuristicoService) {}
