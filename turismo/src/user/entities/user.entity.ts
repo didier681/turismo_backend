@@ -11,6 +11,7 @@ import { Favorito } from '../../favorito/entities/favorito.entity';
 import { Resena } from '../../resena/entities/resena.entity';
 import { Negocio } from '../../negocio/entities/negocio.entity';
 import { GestorZona } from '../../gestor-zona/entities/gestor-zona.entity';
+import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.entity';
 
 // Roles disponibles para controlar el acceso a las funciones de la plataforma.
 export enum UserRole {
@@ -105,4 +106,8 @@ export class User {
   // Zonas asignadas a este gestor.
   @OneToMany(() => GestorZona, (gestorZona) => gestorZona.usuario)
   zonasAsignadas: GestorZona[];
+
+  // Sugerencias de sitios enviadas por este usuario.
+  @OneToMany(() => SitioTuristico, (sitio) => sitio.usuarioSugiere)
+  sitiosSugeridos: SitioTuristico[];
 }
