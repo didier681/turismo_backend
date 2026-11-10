@@ -33,6 +33,15 @@ export class MultimediaService {
   // Valida la referencia y el contenido antes de crear el registro.
   async create(dto: CreateMultimediaDto, user: User): Promise<Multimedia> {
     await this.validateEntidad(dto.tipoEntidad, dto.idEntidad, user);
+    const cantidad = await this.multimediaRepository.countBy({
+      tipoEntidad: dto.tipoEntidad,
+      idEntidad: dto.idEntidad,
+    });
+    if (cantidad >= 10) {
+      throw new BadRequestException(
+        'No se pueden registrar más de 10 archivos multimedia por sitio o negocio',
+      );
+    }
     this.validateContenido(
       dto.tipoContenido,
       dto.urlContenido,
@@ -106,6 +115,20 @@ export class MultimediaService {
         : dto.textoContenido;
 
     await this.validateEntidad(tipoEntidad, idEntidad, user);
+    if (
+      tipoEntidad !== multimedia.tipoEntidad ||
+      idEntidad !== multimedia.idEntidad
+    ) {
+      const cantidad = await this.multimediaRepository.countBy({
+        tipoEntidad,
+        idEntidad,
+      });
+      if (cantidad >= 10) {
+        throw new BadRequestException(
+          'No se pueden registrar más de 10 archivos multimedia por sitio o negocio',
+        );
+      }
+    }
     this.validateContenido(tipoContenido, urlContenido, textoContenido);
     this.multimediaRepository.merge(multimedia, {
       ...dto,

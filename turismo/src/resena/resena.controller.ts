@@ -11,7 +11,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../user/entities/user.entity';
@@ -29,6 +34,10 @@ export class ResenaController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiConflictResponse({
+    description: 'El usuario ya tiene una reseña para este sitio.',
+  })
+  @ApiNotFoundResponse({ description: 'El usuario o sitio indicado no existe.' })
   create(
     @Body() dto: CreateResenaDto,
     @GetUser() user: User,

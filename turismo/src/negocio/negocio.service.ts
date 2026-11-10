@@ -1,11 +1,13 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
 import { Zona } from '../zona/entities/zona.entity';
 import { CreateNegocioDto } from './dto/create-negocio.dto';
@@ -28,16 +30,27 @@ export class NegocioService {
 
   // Valida la zona y, si se indicó, que el sitio exista y pertenezca a esa zona.
   async create(dto: CreateNegocioDto, user: User): Promise<Negocio> {
+    this.validateCoordinates(dto.latitud, dto.longitud);
     await this.validateReferences(dto.idZona, dto.idSitio);
-    return await this.negocioRepository.save(
-      this.negocioRepository.create({
-        ...dto,
-        idUsuario: user.id,
-        idSitio: dto.idSitio ?? null,
-        latitud: String(dto.latitud),
-        longitud: String(dto.longitud),
-      }),
-    );
+    await this.validateNit(dto.nitDocumento);
+    try {
+      return await this.negocioRepository.save(
+        this.negocioRepository.create({
+          ...dto,
+          idUsuario: user.id,
+          idSitio: dto.idSitio ?? null,
+          latitud: String(dto.latitud),
+          longitud: String(dto.longitud),
+        }),
+      );
+    } catch (error) {
+      if (esDuplicadoDeBaseDeDatos(error)) {
+        throw new ConflictException(
+          'Ya existe un negocio registrado con ese NIT o documento',
+        );
+      }
+      throw error;
+    }
   }
 
   // Lista negocios con el sitio y las categorías asociados.
@@ -80,16 +93,30 @@ export class NegocioService {
       throw new NotFoundException(`Negocio con ID ${id} no encontrado`);
     }
     this.assertOwner(negocio, user);
+    const latitud = dto.latitud ?? Number(negocio.latitud);
+    const longitud = dto.longitud ?? Number(negocio.longitud);
+    this.validateCoordinates(latitud, longitud);
     const idZona = dto.idZona ?? negocio.idZona;
     const idSitio = dto.idSitio === undefined ? negocio.idSitio : dto.idSitio;
     await this.validateReferences(idZona, idSitio);
+    const nitDocumento = dto.nitDocumento ?? negocio.nitDocumento;
+    await this.validateNit(nitDocumento, id);
     this.negocioRepository.merge(negocio, {
       ...dto,
       idSitio: dto.idSitio === undefined ? undefined : dto.idSitio,
       latitud: dto.latitud === undefined ? undefined : String(dto.latitud),
       longitud: dto.longitud === undefined ? undefined : String(dto.longitud),
     });
-    await this.negocioRepository.save(negocio);
+    try {
+      await this.negocioRepository.save(negocio);
+    } catch (error) {
+      if (esDuplicadoDeBaseDeDatos(error)) {
+        throw new ConflictException(
+          'Ya existe un negocio registrado con ese NIT o documento',
+        );
+      }
+      throw error;
+    }
     return await this.findOne(id);
   }
 
@@ -106,6 +133,31 @@ export class NegocioService {
   private assertOwner(negocio: Negocio, user: User): void {
     if (user.role !== UserRole.Admin && negocio.idUsuario !== user.id) {
       throw new ForbiddenException('No eres propietario de este negocio');
+    }
+  }
+
+  private validateCoordinates(latitud: number, longitud: number): void {
+    if (!Number.isFinite(latitud) || latitud < -90 || latitud > 90) {
+      throw new BadRequestException(
+        'La latitud debe ser un número entre -90 y 90',
+      );
+    }
+    if (!Number.isFinite(longitud) || longitud < -180 || longitud > 180) {
+      throw new BadRequestException(
+        'La longitud debe ser un número entre -180 y 180',
+      );
+    }
+  }
+
+  private async validateNit(
+    nitDocumento: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const existing = await this.negocioRepository.findOneBy({ nitDocumento });
+    if (existing && existing.idNegocio !== excludeId) {
+      throw new ConflictException(
+        'Ya existe un negocio registrado con ese NIT o documento',
+      );
     }
   }
 
@@ -132,5 +184,19 @@ export class NegocioService {
         );
       }
     }
+
   }
+}
+
+function esDuplicadoDeBaseDeDatos(error: unknown): boolean {
+  if (!(error instanceof QueryFailedError)) {
+    return false;
+  }
+  const driverError = error.driverError;
+  return (
+    typeof driverError === 'object' &&
+    driverError !== null &&
+    'code' in driverError &&
+    driverError.code === 'ER_DUP_ENTRY'
+  );
 }

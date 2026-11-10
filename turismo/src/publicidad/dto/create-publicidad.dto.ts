@@ -46,9 +46,9 @@ export class CreatePublicidadDto {
   @IsEnum(TipoPlanPublicidad)
   tipoPlan: TipoPlanPublicidad;
 
-  // Exige un presupuesto no negativo, finito y de hasta dos decimales.
+  // Exige un presupuesto finito; el mínimo depende del plan y se valida en servicio.
   @ApiProperty({
-    description: 'Presupuesto de la campaña, mayor o igual a cero.',
+    description: 'Presupuesto de la campaña; el mínimo depende del plan.',
     example: 150000,
     minimum: 0,
   })
@@ -57,7 +57,7 @@ export class CreatePublicidadDto {
     allowInfinity: false,
     maxDecimalPlaces: 2,
   })
-  @Min(0)
+  @Min(0, { message: 'El presupuesto no puede ser negativo' })
   @Max(99999999.99)
   presupuesto: number;
 

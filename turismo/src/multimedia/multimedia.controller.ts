@@ -12,7 +12,13 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -38,6 +44,13 @@ export class MultimediaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description: 'El sitio o negocio ya tiene 10 archivos multimedia.',
+  })
+  @ApiForbiddenResponse({
+    description: 'No tienes permiso para gestionar multimedia de esta entidad.',
+  })
+  @ApiNotFoundResponse({ description: 'El sitio o negocio indicado no existe.' })
   create(
     @Body() dto: CreateMultimediaDto,
     @GetUser() user: User,
@@ -72,6 +85,12 @@ export class MultimediaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description: 'El sitio o negocio ya tiene 10 archivos multimedia.',
+  })
+  @ApiForbiddenResponse({
+    description: 'No tienes permiso para gestionar multimedia de esta entidad.',
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMultimediaDto,

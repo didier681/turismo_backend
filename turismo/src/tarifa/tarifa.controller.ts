@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -9,9 +10,19 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -34,11 +45,47 @@ export class TarifaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description: 'Precio inválido o fecha final no posterior a la inicial.',
+  })
+  @ApiConflictResponse({
+    description: 'Las fechas se cruzan con otra tarifa del mismo servicio y nombre.',
+  })
+  @ApiNotFoundResponse({ description: 'El servicio indicado no existe.' })
+  @ApiBadRequestResponse({
+    description: 'idServicio debe ser un número entero.',
+  })
   create(
     @Body() dto: CreateTarifaDto,
     @GetUser() user: User,
   ): Promise<Tarifa> {
     return this.tarifaService.create(dto, user);
+  }
+
+  @Get('vigentes')
+  @ApiOperation({ summary: 'Listar tarifas vigentes de un servicio' })
+  @ApiQuery({
+    name: 'idServicio',
+    type: Number,
+    required: true,
+    description: 'Identificador del servicio.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Tarifas vigentes en la fecha actual.',
+  })
+  @ApiNotFoundResponse({ description: 'El servicio indicado no existe.' })
+  vigentes(
+    @Query(
+      'idServicio',
+      new ParseIntPipe({
+        exceptionFactory: () =>
+          new BadRequestException('idServicio debe ser un número entero'),
+      }),
+    )
+    idServicio: number,
+  ): Promise<Tarifa[]> {
+    return this.tarifaService.findVigentes(idServicio);
   }
 
   // Devuelve todas las tarifas con su servicio asociado.
@@ -58,6 +105,13 @@ export class TarifaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description: 'Precio inválido o fecha final no posterior a la inicial.',
+  })
+  @ApiConflictResponse({
+    description: 'Las fechas se cruzan con otra tarifa del mismo servicio y nombre.',
+  })
+  @ApiNotFoundResponse({ description: 'El servicio indicado no existe.' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTarifaDto,

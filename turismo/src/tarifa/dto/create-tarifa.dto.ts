@@ -25,7 +25,7 @@ interface VigenciaDto {
 }
 
 @ValidatorConstraint({ name: 'vigenciaFinPosterior', async: false })
-// Valida que el final del período no sea anterior a su inicio.
+// Valida que la fecha final sea posterior a la inicial.
 class VigenciaFinPosteriorConstraint implements ValidatorConstraintInterface {
   // Comprueba la vigencia final cuando ambas fechas están presentes.
   validate(value: unknown, args: ValidationArguments): boolean {
@@ -33,12 +33,12 @@ class VigenciaFinPosteriorConstraint implements ValidatorConstraintInterface {
     if (typeof value !== 'string' || typeof vigenciaIni !== 'string') {
       return true;
     }
-    return Date.parse(value) >= Date.parse(vigenciaIni);
+    return Date.parse(value) > Date.parse(vigenciaIni);
   }
 
   // Explica el requisito temporal cuando la validación no se cumple.
   defaultMessage(): string {
-    return 'vigenciaFin debe ser igual o posterior a vigenciaIni';
+    return 'vigenciaFin debe ser posterior a vigenciaIni';
   }
 }
 
@@ -74,7 +74,7 @@ export class CreateTarifaDto {
     allowInfinity: false,
     maxDecimalPlaces: 2,
   })
-  @IsPositive()
+  @IsPositive({ message: 'El precio de la tarifa debe ser mayor a 0' })
   @Max(99999999.99)
   precio: number;
 
@@ -106,9 +106,9 @@ export class CreateTarifaDto {
   @IsDateString({ strict: true })
   vigenciaIni: string;
 
-  // Exige una fecha ISO válida y que no anteceda a la fecha inicial.
+  // Exige una fecha ISO válida y posterior a la fecha inicial.
   @ApiProperty({
-    description: 'Fecha final de vigencia, igual o posterior al inicio.',
+    description: 'Fecha final de vigencia posterior al inicio.',
     example: '2026-12-31',
   })
   @IsDateString({ strict: true })

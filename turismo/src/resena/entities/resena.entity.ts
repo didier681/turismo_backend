@@ -4,12 +4,14 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.entity';
 
 // Opinión de un usuario sobre un sitio turístico.
 @Entity('resenas')
+@Index(['idUsuario', 'idSitio'], { unique: true })
 export class Resena {
   @PrimaryGeneratedColumn({ name: 'id_resena' })
   idResena: number;

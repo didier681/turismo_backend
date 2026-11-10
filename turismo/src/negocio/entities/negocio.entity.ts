@@ -57,7 +57,7 @@ export class Negocio {
   nombreComercial: string;
 
   // NIT u otro documento de identificación del negocio.
-  @Column({ type: 'varchar', length: 50, name: 'nit_documento' })
+  @Column({ type: 'varchar', length: 50, name: 'nit_documento', unique: true })
   nitDocumento: string;
 
   // Latitud geográfica del negocio en formato decimal.

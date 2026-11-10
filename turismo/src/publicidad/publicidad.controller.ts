@@ -11,7 +11,15 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -34,11 +42,37 @@ export class PublicidadController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description:
+      'El presupuesto mínimo del plan no se cumple o las fechas no son válidas.',
+  })
+  @ApiForbiddenResponse({
+    description: 'El negocio tiene membresía gratis o no pertenece al usuario.',
+  })
+  @ApiNotFoundResponse({ description: 'El negocio o sitio asociado no existe.' })
+  @ApiBadRequestResponse({
+    description:
+      'La fecha inicial no puede estar en el pasado y el presupuesto debe cumplir el mínimo del plan.',
+  })
+  @ApiForbiddenResponse({
+    description: 'El negocio tiene membresía gratis o no pertenece al usuario.',
+  })
+  @ApiNotFoundResponse({ description: 'El negocio o sitio asociado no existe.' })
   create(
     @Body() dto: CreatePublicidadDto,
     @GetUser() user: User,
   ): Promise<Publicidad> {
     return this.publicidadService.create(dto, user);
+  }
+
+  @Get('activas')
+  @ApiOperation({ summary: 'Listar campañas publicitarias vigentes hoy' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Campañas activas con vigencia que incluye la fecha actual.',
+  })
+  activas(): Promise<Publicidad[]> {
+    return this.publicidadService.findActivas();
   }
 
   // Devuelve todas las publicidades y sus referencias.
@@ -62,6 +96,13 @@ export class PublicidadController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description:
+      'El presupuesto mínimo del plan no se cumple o las fechas no son válidas.',
+  })
+  @ApiForbiddenResponse({
+    description: 'El negocio tiene membresía gratis o no pertenece al usuario.',
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePublicidadDto,

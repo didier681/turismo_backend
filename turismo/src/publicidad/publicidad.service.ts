@@ -5,12 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Negocio } from '../negocio/entities/negocio.entity';
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  EstadoMembresia,
+  Negocio,
+} from '../negocio/entities/negocio.entity';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
 import { CreatePublicidadDto } from './dto/create-publicidad.dto';
 import { UpdatePublicidadDto } from './dto/update-publicidad.dto';
-import { Publicidad } from './entities/publicidad.entity';
+import {
+  EstadoPublicidad,
+  Publicidad,
+  TipoPlanPublicidad,
+} from './entities/publicidad.entity';
 import { User, UserRole } from '../user/entities/user.entity';
 
 @Injectable()
@@ -28,12 +35,15 @@ export class PublicidadService {
 
   // Valida las entidades relacionadas y las fechas antes de crear la campaña.
   async create(dto: CreatePublicidadDto, user: User): Promise<Publicidad> {
-    await this.validateReferences(
+    const negocio = await this.validateReferences(
       dto.idNegocio,
       dto.idSitioAsociado,
       user,
     );
+    this.validateMembresia(negocio);
     this.validateFechas(dto.fechaIni, dto.fechaFin);
+    this.validateFechaInicial(dto.fechaIni);
+    this.validatePresupuesto(dto.tipoPlan, dto.presupuesto);
     return await this.publicidadRepository.save(
       this.publicidadRepository.create({
         ...dto,
@@ -47,6 +57,20 @@ export class PublicidadService {
   async findAll(): Promise<Publicidad[]> {
     return await this.publicidadRepository.find({
       relations: { negocio: true, sitioAsociado: true },
+    });
+  }
+
+  // Lista campañas activas cuya vigencia incluye la fecha de hoy.
+  async findActivas(): Promise<Publicidad[]> {
+    const hoy = fechaLocalActual();
+    return await this.publicidadRepository.find({
+      where: {
+        estado: EstadoPublicidad.Activo,
+        fechaIni: LessThanOrEqual(hoy),
+        fechaFin: MoreThanOrEqual(hoy),
+      },
+      relations: { negocio: true, sitioAsociado: true },
+      order: { fechaIni: 'ASC' },
     });
   }
 
@@ -90,6 +114,13 @@ export class PublicidadService {
 
     await this.validateReferences(idNegocio, idSitioAsociado, user);
     this.validateFechas(fechaIni, fechaFin);
+    this.validateFechaInicial(fechaIni);
+    this.validatePresupuesto(
+      dto.tipoPlan ?? publicidad.tipoPlan,
+      dto.presupuesto === undefined
+        ? Number(publicidad.presupuesto)
+        : dto.presupuesto,
+    );
 
     this.publicidadRepository.merge(publicidad, {
       ...dto,
@@ -123,7 +154,7 @@ export class PublicidadService {
     idNegocio: number,
     idSitioAsociado: number | null | undefined,
     user: User,
-  ): Promise<void> {
+  ): Promise<Negocio> {
     const negocio = await this.negocioRepository.findOneBy({ idNegocio });
     if (!negocio) {
       throw new NotFoundException(`Negocio con ID ${idNegocio} no encontrado`);
@@ -141,20 +172,58 @@ export class PublicidadService {
         );
       }
     }
+    return negocio;
   }
 
   // Requiere que ambas fechas sean válidas y que el cierre sea posterior.
   private validateFechas(fechaIni: string, fechaFin: string): void {
     const inicio = Date.parse(fechaIni);
     const fin = Date.parse(fechaFin);
-    if (
-      !Number.isFinite(inicio) ||
-      !Number.isFinite(fin) ||
-      fin <= inicio
-    ) {
+    if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin <= inicio) {
       throw new BadRequestException(
         'fechaFin debe ser una fecha válida posterior a fechaIni',
       );
     }
   }
+
+  private validateFechaInicial(fechaIni: string): void {
+    if (fechaIni < fechaLocalActual()) {
+      throw new BadRequestException(
+        'fechaIni no puede ser anterior a la fecha de hoy',
+      );
+    }
+  }
+
+  private validatePresupuesto(
+    tipoPlan: TipoPlanPublicidad,
+    presupuesto: number,
+  ): void {
+    const minimo =
+      tipoPlan === TipoPlanPublicidad.Basico
+        ? 50000
+        : tipoPlan === TipoPlanPublicidad.Premium
+          ? 150000
+          : 0;
+    if (!Number.isFinite(presupuesto) || presupuesto < minimo) {
+      throw new BadRequestException(
+        `El presupuesto mínimo para el plan ${tipoPlan} es de $${minimo.toLocaleString('es-CO')}`,
+      );
+    }
+  }
+
+  private validateMembresia(negocio: Negocio): void {
+    if (negocio.estadoMembresia === EstadoMembresia.Gratis) {
+      throw new ForbiddenException(
+        'Un negocio con membresía gratis no puede crear publicidad',
+      );
+    }
+  }
+}
+
+function fechaLocalActual(): string {
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }

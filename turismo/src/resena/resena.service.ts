@@ -1,10 +1,11 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateResenaDto } from './dto/create-resena.dto';
@@ -26,9 +27,28 @@ export class ResenaService {
   // Crea una reseña tras confirmar la existencia del usuario y del sitio.
   async create(dto: CreateResenaDto, user: User): Promise<Resena> {
     await this.validateReferences(user.id, dto.idSitio);
-    return await this.resenaRepository.save(
-      this.resenaRepository.create({ ...dto, idUsuario: user.id }),
-    );
+    if (
+      await this.resenaRepository.existsBy({
+        idUsuario: user.id,
+        idSitio: dto.idSitio,
+      })
+    ) {
+      throw new ConflictException(
+        'Ya tienes una reseña para este sitio turístico',
+      );
+    }
+    try {
+      return await this.resenaRepository.save(
+        this.resenaRepository.create({ ...dto, idUsuario: user.id }),
+      );
+    } catch (error) {
+      if (esDuplicadoDeBaseDeDatos(error)) {
+        throw new ConflictException(
+          'Ya tienes una reseña para este sitio turístico',
+        );
+      }
+      throw error;
+    }
   }
 
   // Lista reseñas incluyendo el autor y el sitio reseñado.
@@ -64,9 +84,29 @@ export class ResenaService {
 
     const idSitio = dto.idSitio ?? resena.idSitio;
     await this.validateReferences(user.id, idSitio);
+    if (
+      idSitio !== resena.idSitio &&
+      (await this.resenaRepository.existsBy({
+        idUsuario: user.id,
+        idSitio,
+      }))
+    ) {
+      throw new ConflictException(
+        'Ya tienes una reseña para este sitio turístico',
+      );
+    }
 
     this.resenaRepository.merge(resena, dto);
-    await this.resenaRepository.save(resena);
+    try {
+      await this.resenaRepository.save(resena);
+    } catch (error) {
+      if (esDuplicadoDeBaseDeDatos(error)) {
+        throw new ConflictException(
+          'Ya tienes una reseña para este sitio turístico',
+        );
+      }
+      throw error;
+    }
     return await this.findOne(id);
   }
 
@@ -106,4 +146,18 @@ export class ResenaService {
       );
     }
   }
+
+}
+
+function esDuplicadoDeBaseDeDatos(error: unknown): boolean {
+  if (!(error instanceof QueryFailedError)) {
+    return false;
+  }
+  const driverError = error.driverError;
+  return (
+    typeof driverError === 'object' &&
+    driverError !== null &&
+    'code' in driverError &&
+    driverError.code === 'ER_DUP_ENTRY'
+  );
 }

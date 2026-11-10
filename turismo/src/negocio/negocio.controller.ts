@@ -11,7 +11,13 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -34,6 +40,13 @@ export class NegocioController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description: 'La latitud o longitud está fuera del rango permitido.',
+  })
+  @ApiConflictResponse({
+    description: 'Ya existe un negocio registrado con ese NIT o documento.',
+  })
+  @ApiNotFoundResponse({ description: 'La zona o el sitio indicado no existe.' })
   create(
     @Body() dto: CreateNegocioDto,
     @GetUser() user: User,
@@ -58,6 +71,12 @@ export class NegocioController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('negocio', 'admin')
   @ApiBearerAuth()
+  @ApiBadRequestResponse({
+    description: 'La latitud o longitud está fuera del rango permitido.',
+  })
+  @ApiConflictResponse({
+    description: 'Ya existe un negocio registrado con ese NIT o documento.',
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateNegocioDto,

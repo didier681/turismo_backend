@@ -59,21 +59,25 @@ export class CreateNegocioDto {
   @ApiProperty({
     description: 'Latitud geográfica del negocio en grados decimales.',
     example: 8.7501,
+    minimum: -90,
+    maximum: 90,
   })
   // Valida que la latitud sea numérica, tenga hasta 7 decimales y esté en rango.
   @IsNumber({ maxDecimalPlaces: 7 })
-  @Min(-90)
-  @Max(90)
+  @Min(-90, { message: 'La latitud debe ser mayor o igual a -90' })
+  @Max(90, { message: 'La latitud debe ser menor o igual a 90' })
   latitud: number;
 
   @ApiProperty({
     description: 'Longitud geográfica del negocio en grados decimales.',
     example: -75.8834,
+    minimum: -180,
+    maximum: 180,
   })
   // Valida que la longitud sea numérica, tenga hasta 7 decimales y esté en rango.
   @IsNumber({ maxDecimalPlaces: 7 })
-  @Min(-180)
-  @Max(180)
+  @Min(-180, { message: 'La longitud debe ser mayor o igual a -180' })
+  @Max(180, { message: 'La longitud debe ser menor o igual a 180' })
   longitud: number;
 
   @ApiProperty({

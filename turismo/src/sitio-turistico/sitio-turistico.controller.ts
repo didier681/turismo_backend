@@ -13,9 +13,11 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -95,6 +97,25 @@ export class SitioTuristicoController {
   @ApiNotFoundResponse({ description: 'Sitio aprobado no encontrado.' })
   findOne(@Param('id', ParseIntPipe) id: number): Promise<SitioTuristico> {
     return this.sitioService.findOne(id);
+  }
+
+  @Get(':id/calificacion')
+  @ApiOperation({ summary: 'Consultar promedio y total de reseñas del sitio' })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        promedio: { type: 'number', example: 4.5 },
+        total: { type: 'integer', example: 12 },
+      },
+    },
+  })
+  @ApiNotFoundResponse({ description: 'El sitio no existe o no está aprobado.' })
+  @ApiBadRequestResponse({ description: 'El identificador debe ser un entero.' })
+  calificacion(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ promedio: number; total: number }> {
+    return this.sitioService.findCalificacion(id);
   }
 
   @Patch(':id/aprobar')

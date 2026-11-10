@@ -11,7 +11,14 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../user/entities/user.entity';
@@ -29,11 +36,25 @@ export class FavoritoController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiConflictResponse({ description: 'El sitio ya está guardado en favoritos.' })
+  @ApiNotFoundResponse({ description: 'El sitio indicado no existe.' })
   create(
     @Body() dto: CreateFavoritoDto,
     @GetUser() user: User,
   ): Promise<Favorito> {
     return this.favoritoService.create(dto, user);
+  }
+
+  @Get('mios')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar los favoritos del usuario autenticado' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Favoritos del usuario del token.',
+  })
+  mios(@GetUser() user: User): Promise<Favorito[]> {
+    return this.favoritoService.findMios(user);
   }
 
   @Get()

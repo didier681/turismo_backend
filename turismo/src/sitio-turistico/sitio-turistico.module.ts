@@ -6,6 +6,7 @@ import { SitioTuristicoController } from './sitio-turistico.controller';
 import { SitioTuristicoService } from './sitio-turistico.service';
 import { GestorZona } from '../gestor-zona/entities/gestor-zona.entity';
 import { ConfirmacionSitio } from './entities/confirmacion-sitio.entity';
+import { Resena } from '../resena/entities/resena.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ConfirmacionSitio } from './entities/confirmacion-sitio.entity';
       Zona,
       GestorZona,
       ConfirmacionSitio,
+      Resena,
     ]),
   ],
   controllers: [SitioTuristicoController],

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { SitioTuristico } from '../sitio-turistico/entities/sitio-turistico.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateFavoritoDto } from './dto/create-favorito.dto';
@@ -35,12 +35,27 @@ export class FavoritoService {
     if (exists) {
       throw new ConflictException('El sitio ya está guardado en favoritos');
     }
-    return await this.favoritoRepository.save(
-      this.favoritoRepository.create({
-        idUsuario: user.id,
-        idSitio: dto.idSitio,
-      }),
-    );
+    try {
+      return await this.favoritoRepository.save(
+        this.favoritoRepository.create({
+          idUsuario: user.id,
+          idSitio: dto.idSitio,
+        }),
+      );
+    } catch (error) {
+      if (esDuplicadoDeBaseDeDatos(error)) {
+        throw new ConflictException('El sitio ya está guardado en favoritos');
+      }
+      throw error;
+    }
+  }
+
+  // Lista exclusivamente los favoritos del usuario autenticado.
+  async findMios(user: User): Promise<Favorito[]> {
+    return await this.favoritoRepository.find({
+      where: { idUsuario: user.id },
+      relations: { usuario: true, sitio: true },
+    });
   }
 
   // Lista favoritos incluyendo usuario y sitio.
@@ -92,12 +107,19 @@ export class FavoritoService {
         throw new ConflictException('El sitio ya está guardado en favoritos');
       }
 
-      await repository.save(
-        repository.create({
-          idUsuario,
-          idSitio: nextIdSitio,
-        }),
-      );
+      try {
+        await repository.save(
+          repository.create({
+            idUsuario,
+            idSitio: nextIdSitio,
+          }),
+        );
+      } catch (error) {
+        if (esDuplicadoDeBaseDeDatos(error)) {
+          throw new ConflictException('El sitio ya está guardado en favoritos');
+        }
+        throw error;
+      }
       await repository.remove(current);
       return await repository.findOneByOrFail({
         idUsuario,
@@ -137,4 +159,18 @@ export class FavoritoService {
       );
     }
   }
+
+}
+
+function esDuplicadoDeBaseDeDatos(error: unknown): boolean {
+  if (!(error instanceof QueryFailedError)) {
+    return false;
+  }
+  const driverError = error.driverError;
+  return (
+    typeof driverError === 'object' &&
+    driverError !== null &&
+    'code' in driverError &&
+    driverError.code === 'ER_DUP_ENTRY'
+  );
 }

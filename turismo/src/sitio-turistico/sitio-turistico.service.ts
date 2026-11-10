@@ -25,6 +25,7 @@ import { User, UserRole } from '../user/entities/user.entity';
 import { SugerirSitioTuristicoDto } from './dto/sugerir-sitio-turistico.dto';
 import { RechazarSitioTuristicoDto } from './dto/rechazar-sitio-turistico.dto';
 import { ConfirmacionSitio } from './entities/confirmacion-sitio.entity';
+import { Resena } from '../resena/entities/resena.entity';
 
 @Injectable()
 // Gestiona sitios turísticos, sugerencias de la comunidad y su moderación.
@@ -140,6 +141,29 @@ export class SitioTuristicoService {
       throw new NotFoundException(`Sitio turístico con ID ${id} no encontrado`);
     }
     return sitio;
+  }
+
+  // Calcula el promedio y total de reseñas de un sitio público aprobado.
+  async findCalificacion(
+    id: number,
+  ): Promise<{ promedio: number; total: number }> {
+    await this.findOne(id);
+    const resultado = await this.dataSource
+      .getRepository(Resena)
+      .createQueryBuilder('resena')
+      .select('AVG(resena.calificacion)', 'promedio')
+      .addSelect('COUNT(resena.idResena)', 'total')
+      .where('resena.idSitio = :idSitio', { idSitio: id })
+      .getRawOne<{ promedio: string | null; total: string }>();
+
+    if (!resultado) {
+      throw new Error('No se pudo calcular la calificación del sitio');
+    }
+    return {
+      promedio:
+        resultado.promedio === null ? 0 : Number(resultado.promedio),
+      total: Number(resultado.total),
+    };
   }
 
   // Lista pendientes por zona asignada al gestor o todas para el administrador.

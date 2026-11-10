@@ -1,11 +1,16 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { Servicio } from '../servicio/entities/servicio.entity';
 import { CreateTarifaDto } from './dto/create-tarifa.dto';
 import { UpdateTarifaDto } from './dto/update-tarifa.dto';
@@ -28,6 +33,13 @@ export class TarifaService {
   async create(dto: CreateTarifaDto, user: User): Promise<Tarifa> {
     await this.validateServicio(dto.idServicio, user);
     this.validateVigencia(dto.vigenciaIni, dto.vigenciaFin);
+    this.validatePrecio(dto.precio);
+    await this.validateNoCruce(
+      dto.idServicio,
+      dto.nombreTarifa,
+      dto.vigenciaIni,
+      dto.vigenciaFin,
+    );
     return await this.tarifaRepository.save(
       this.tarifaRepository.create({ ...dto, precio: String(dto.precio) }),
     );
@@ -36,6 +48,28 @@ export class TarifaService {
   // Lista tarifas incluyendo el servicio al que pertenecen.
   async findAll(): Promise<Tarifa[]> {
     return await this.tarifaRepository.find({ relations: { servicio: true } });
+  }
+
+  // Devuelve las tarifas vigentes hoy para un servicio existente.
+  async findVigentes(idServicio: number): Promise<Tarifa[]> {
+    const servicioExiste = await this.servicioRepository.existsBy({
+      idServicio,
+    });
+    if (!servicioExiste) {
+      throw new NotFoundException(
+        `Servicio con ID ${idServicio} no encontrado`,
+      );
+    }
+    const hoy = fechaLocalActual();
+    return await this.tarifaRepository.find({
+      where: {
+        idServicio,
+        vigenciaIni: LessThanOrEqual(hoy),
+        vigenciaFin: MoreThanOrEqual(hoy),
+      },
+      relations: { servicio: true },
+      order: { vigenciaIni: 'ASC' },
+    });
   }
 
   // Busca una tarifa por ID junto con su servicio.
@@ -71,6 +105,16 @@ export class TarifaService {
       await this.validateServicio(idServicio, user);
     }
     this.validateVigencia(vigenciaIni, vigenciaFin);
+    this.validatePrecio(
+      dto.precio === undefined ? Number(tarifa.precio) : dto.precio,
+    );
+    await this.validateNoCruce(
+      idServicio,
+      dto.nombreTarifa ?? tarifa.nombreTarifa,
+      vigenciaIni,
+      vigenciaFin,
+      id,
+    );
 
     this.tarifaRepository.merge(tarifa, {
       ...dto,
@@ -116,14 +160,53 @@ export class TarifaService {
     }
   }
 
-  // Garantiza que el fin del período no sea anterior a su inicio.
+  // Garantiza fechas válidas y que el fin sea posterior al inicio.
   private validateVigencia(vigenciaIni: string, vigenciaFin: string): void {
     const inicio = Date.parse(vigenciaIni);
     const fin = Date.parse(vigenciaFin);
-    if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin < inicio) {
+    if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin <= inicio) {
       throw new BadRequestException(
-        'vigenciaIni y vigenciaFin deben ser fechas válidas y vigenciaFin debe ser igual o posterior',
+        'vigenciaIni y vigenciaFin deben ser fechas válidas y vigenciaFin debe ser posterior a vigenciaIni',
       );
     }
   }
+
+  private validatePrecio(precio: number): void {
+    if (!Number.isFinite(precio) || precio <= 0) {
+      throw new BadRequestException('El precio de la tarifa debe ser mayor a 0');
+    }
+  }
+
+  // Evita intervalos inclusivos cruzados para el mismo servicio y nombre.
+  private async validateNoCruce(
+    idServicio: number,
+    nombreTarifa: string,
+    vigenciaIni: string,
+    vigenciaFin: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const query = this.tarifaRepository
+      .createQueryBuilder('tarifa')
+      .where('tarifa.idServicio = :idServicio', { idServicio })
+      .andWhere('tarifa.nombreTarifa = :nombreTarifa', { nombreTarifa })
+      .andWhere('tarifa.vigenciaIni <= :vigenciaFin', { vigenciaFin })
+      .andWhere('tarifa.vigenciaFin >= :vigenciaIni', { vigenciaIni });
+    if (excludeId !== undefined) {
+      query.andWhere('tarifa.idTarifa != :excludeId', { excludeId });
+    }
+    if (await query.getOne()) {
+      throw new ConflictException(
+        'Las fechas de vigencia se cruzan con otra tarifa del mismo servicio y nombre',
+      );
+    }
+  }
+
+}
+
+function fechaLocalActual(): string {
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }
