@@ -1,119 +1,107 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Córdoba Cerca
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Córdoba Cerca es una API de turismo para el departamento de Córdoba. Permite consultar y administrar sitios turísticos, negocios y servicios, y ofrece funciones para que las personas visitantes interactúen con el catálogo.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tecnologías
 
-## Description
+- NestJS y TypeScript
+- TypeORM
+- MySQL o MariaDB
+- JWT para autenticación
+- Swagger para la documentación interactiva
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requisitos
 
-## Project setup
+- Node.js y npm
+- MySQL o MariaDB en ejecución
+- Una base de datos llamada `turismo`
+
+## Instalación y ejecución
+
+1. Clona el repositorio y entra al directorio del proyecto:
+
+   ```bash
+   git clone https://github.com/didier681/turismo_backend.git
+   cd turismo_backend/turismo
+   ```
+
+2. Instala las dependencias:
+
+   ```bash
+   npm install
+   ```
+
+3. Copia `.env.example` como `.env` y configura las credenciales de la base de datos, el secreto JWT y los datos del administrador inicial.
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   En Windows puedes usar `Copy-Item .env.example .env` desde PowerShell.
+
+4. Crea la base de datos en MySQL o MariaDB:
+
+   ```sql
+   CREATE DATABASE turismo;
+   ```
+
+5. Crea el usuario administrador inicial. El comando no duplica el usuario si el correo ya existe:
+
+   ```bash
+   npm run seed
+   ```
+
+6. Inicia el servidor en modo desarrollo:
+
+   ```bash
+   npm run start:dev
+   ```
+
+La API estará disponible en `http://localhost:3000` (o en el puerto definido por `PORT`).
+
+## Documentación y autenticación
+
+Con el servidor en ejecución, abre Swagger en [http://localhost:3000/api/docs](http://localhost:3000/api/docs). Para probar rutas protegidas:
+
+1. Regístrate o inicia sesión en los endpoints de autenticación.
+2. Copia el valor `token` de la respuesta.
+3. Pulsa **Authorize** en Swagger y pega solo el token, sin escribir el prefijo `Bearer`; Swagger lo añade automáticamente.
+4. Pulsa **Authorize** y cierra el diálogo. Swagger enviará el token en las solicitudes protegidas.
+
+## Roles
+
+| Rol | Permisos principales |
+| --- | --- |
+| `admin` | Administra usuarios, zonas y categorías; gestiona sitios turísticos y los recursos de negocios. |
+| `gestor` | Gestiona sitios turísticos y sus categorías dentro de las zonas asignadas. |
+| `negocio` | Administra su negocio, categorías, servicios, tarifas, multimedia y publicidad. |
+| `usuario` | Consulta el catálogo y registra favoritos, visitas y reseñas. |
+
+Las rutas de escritura requieren autenticación y aplican permisos por rol y, cuando corresponde, validaciones de propiedad o asignación.
+
+## Módulos
+
+- **Autenticación y usuarios:** `auth` y `user` para registro, inicio de sesión, perfiles y administración de cuentas.
+- **Zonas y sitios turísticos:** `zona`, `sitio-turistico`, `categoria-sitio` y `sitio-categoria`.
+- **Interacciones:** `favorito`, `resena` y `visita`.
+- **Negocios:** `categoria-negocio`, `negocio`, `negocio-categoria`, `servicio`, `tarifa`, `publicidad` y `multimedia`.
+
+## Reglas de negocio principales
+
+- El registro público siempre crea usuarios con rol `usuario`; no permite asignar un rol privilegiado.
+- Las contraseñas se almacenan cifradas con bcrypt. El inicio de sesión requiere credenciales válidas y una cuenta activa.
+- El correo y el documento de identidad deben ser únicos. Los gestores se crean inactivos y requieren aprobación; sus zonas se asignan explícitamente.
+- Una persona usuaria solo puede publicar una reseña por sitio.
+- Las coordenadas de los negocios deben estar dentro de los rangos geográficos válidos.
+- No se permiten tarifas del mismo nombre con períodos de vigencia superpuestos para un servicio.
+- La publicidad no se habilita para negocios con membresía gratuita.
+- Cada entidad admite como máximo diez registros multimedia.
+
+## Pruebas y calidad
 
 ```bash
-$ npm install
+npm test          # Pruebas unitarias
+npm run test:e2e  # Pruebas de extremo a extremo
+npm run lint      # Análisis estático
+npm run build     # Compilación
 ```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## API documentation
-
-With the server running, open Swagger UI at [http://localhost:3000/api/docs](http://localhost:3000/api/docs).
-If the `PORT` environment variable is set, use that port instead of `3000`.
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

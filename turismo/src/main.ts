@@ -2,9 +2,12 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { QueryFailedFilter } from './common/filters/query-failed.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalFilters(new QueryFailedFilter());
 
   // Configurar ValidationPipe globalmente
   app.useGlobalPipes(
