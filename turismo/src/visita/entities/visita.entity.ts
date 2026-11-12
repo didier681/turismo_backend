@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
 } from 'typeorm';
+import { Transform } from 'class-transformer';
 import { User } from '../../user/entities/user.entity';
 import { SitioTuristico } from '../../sitio-turistico/entities/sitio-turistico.entity';
 import { Zona } from '../../zona/entities/zona.entity';
@@ -20,6 +21,12 @@ export class Visita {
   idUsuario: number;
 
   // Usuario que realizó la visita; se reutiliza la entidad de autenticación.
+  // El historial expone únicamente el identificador y nombre del visitante.
+  @Transform(
+    ({ value }: { value: User | null }) =>
+      value ? { id: value.id, nombre: value.nombre } : value,
+    { toPlainOnly: true },
+  )
   @ManyToOne(() => User, (usuario) => usuario.visitas, { nullable: false })
   @JoinColumn({ name: 'id_usuario', referencedColumnName: 'id' })
   usuario: User;

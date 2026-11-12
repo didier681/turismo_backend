@@ -6,7 +6,7 @@ import { User } from '../user/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { AuthResponse } from './interfaces/auth-response.interface';
+import { AuthResponse, AuthUser } from './interfaces/auth-response.interface';
 
 @Injectable()
 // Coordina el registro, el inicio de sesión y la validación de tokens.
@@ -91,12 +91,14 @@ export class AuthService {
     const token: string = await this.generateToken(user);
 
     return {
-      user: {
+      user: Object.assign(new AuthUser(), {
         id: user.id,
         email: user.email,
         nombre: user.nombre,
         role: user.role,
-      },
+        documentoIdentidad: user.documentoIdentidad,
+        soporteUrl: user.soporteUrl,
+      }),
       token,
     };
   }

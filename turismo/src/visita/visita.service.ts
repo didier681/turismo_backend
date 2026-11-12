@@ -42,6 +42,14 @@ export class VisitaService {
     });
   }
 
+  // Retorna exclusivamente visitas del usuario identificado por el JWT.
+  async findMias(user: User): Promise<Visita[]> {
+    return await this.visitaRepository.find({
+      where: { idUsuario: user.id },
+      relations: { usuario: true, zona: true, sitio: true },
+    });
+  }
+
   // Recupera una visita por ID con su contexto completo.
   async findOne(id: number): Promise<Visita> {
     const visita = await this.visitaRepository.findOne({

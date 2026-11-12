@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -29,6 +30,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
+// El grupo administrativo permite datos de contacto solo a personal autorizado.
+@SerializeOptions({ groups: ['admin'] })
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

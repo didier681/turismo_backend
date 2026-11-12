@@ -112,7 +112,13 @@ export class PublicidadService {
     const fechaIni = dto.fechaIni ?? publicidad.fechaIni;
     const fechaFin = dto.fechaFin ?? publicidad.fechaFin;
 
-    await this.validateReferences(idNegocio, idSitioAsociado, user);
+    // Vuelve a comprobar la membresía también al editar una campaña existente.
+    const negocio = await this.validateReferences(
+      idNegocio,
+      idSitioAsociado,
+      user,
+    );
+    this.validateMembresia(negocio);
     this.validateFechas(fechaIni, fechaFin);
     this.validateFechaInicial(fechaIni);
     this.validatePresupuesto(

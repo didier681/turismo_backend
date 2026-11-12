@@ -1,6 +1,5 @@
 import {
   IsEmail,
-  IsEnum,
   IsInt,
   IsNumber,
   IsNotEmpty,
@@ -11,8 +10,8 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { EstadoMembresia } from '../entities/negocio.entity';
 
+// La membresía no se acepta en el alta para que todo negocio nazca gratis.
 // Datos validados para registrar un negocio que siempre pertenece a una zona.
 export class CreateNegocioDto {
   @ApiProperty({
@@ -99,14 +98,4 @@ export class CreateNegocioDto {
   @MaxLength(255)
   email: string;
 
-  @ApiProperty({
-    description: 'Nivel de membresía; si se omite, el valor predeterminado es gratis.',
-    enum: EstadoMembresia,
-    example: EstadoMembresia.Gratis,
-    required: false,
-  })
-  // Si se proporciona, restringe la membresía a los valores del enum.
-  @IsEnum(EstadoMembresia)
-  @IsOptional()
-  estadoMembresia?: EstadoMembresia;
 }

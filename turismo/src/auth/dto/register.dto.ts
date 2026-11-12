@@ -1,5 +1,8 @@
 import { OmitType } from '@nestjs/swagger';
 import { CreateUserDto } from '../../user/dto/create-user.dto';
 
-// El registro reutiliza validaciones y no permite que el cliente asigne su rol.
-export class RegisterDto extends OmitType(CreateUserDto, ['role'] as const) {}
+// El registro público no permite asignar roles ni datos de identidad documental.
+export class RegisterDto extends OmitType(
+  CreateUserDto,
+  ['role', 'documentoIdentidad', 'soporteUrl'] as const,
+) {}

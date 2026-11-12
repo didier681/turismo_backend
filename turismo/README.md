@@ -79,6 +79,12 @@ Con el servidor en ejecución, abre Swagger en [http://localhost:3000/api/docs](
 
 Las rutas de escritura requieren autenticación y aplican permisos por rol y, cuando corresponde, validaciones de propiedad o asignación.
 
+## Endpoints personales y administrativos
+
+- `GET /visitas/mias`: lista las visitas del usuario autenticado. `GET /visitas` y `GET /visitas/:id` son exclusivos de administradores.
+- `GET /favoritos/mios`: lista los favoritos del usuario autenticado. `GET /favoritos` y `GET /favoritos/:idUsuario/:idSitio` son exclusivos de administradores.
+- `PATCH /negocios/:id/membresia`: permite a un administrador cambiar la membresía (`gratis`, `basico` o `premium`). Los negocios nuevos siempre comienzan con membresía gratis.
+
 ## Módulos
 
 - **Autenticación y usuarios:** `auth` y `user` para registro, inicio de sesión, perfiles y administración de cuentas.

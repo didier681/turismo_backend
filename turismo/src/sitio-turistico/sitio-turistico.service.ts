@@ -107,7 +107,8 @@ export class SitioTuristicoService {
     if (duplicado) {
       throw new ConflictException({
         message: 'Ya existe un sitio con un nombre parecido a menos de 200 metros',
-        sitio: duplicado,
+        // No devuelve las relaciones ni los datos internos del sitio existente.
+        sitio: { idSitio: duplicado.idSitio, nombre: duplicado.nombre },
       });
     }
 

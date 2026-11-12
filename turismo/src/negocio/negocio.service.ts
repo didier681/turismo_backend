@@ -120,6 +120,20 @@ export class NegocioService {
     return await this.findOne(id);
   }
 
+  // Centraliza el cambio de membresía, que no forma parte del CRUD del negocio.
+  async updateMembresia(
+    id: number,
+    estadoMembresia: Negocio['estadoMembresia'],
+  ): Promise<Negocio> {
+    const negocio = await this.negocioRepository.findOneBy({ idNegocio: id });
+    if (!negocio) {
+      throw new NotFoundException(`Negocio con ID ${id} no encontrado`);
+    }
+    negocio.estadoMembresia = estadoMembresia;
+    await this.negocioRepository.save(negocio);
+    return await this.findOne(id);
+  }
+
   // Elimina el negocio indicado.
   async remove(id: number, user: User): Promise<void> {
     const negocio = await this.negocioRepository.findOneBy({ idNegocio: id });

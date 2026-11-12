@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { Visita } from '../../visita/entities/visita.entity';
 import { Favorito } from '../../favorito/entities/favorito.entity';
 import { Resena } from '../../resena/entities/resena.entity';
@@ -28,11 +28,15 @@ export class User {
   @PrimaryGeneratedColumn({ name: 'id_usuario' })
   id: number;
 
-  // Correo único utilizado para identificar la cuenta durante el inicio de sesión.
+  // El correo solo se expone en respuestas administrativas o del propio usuario.
+  @Exclude({ toClassOnly: true })
+  @Expose({ groups: ['admin', 'propio'] })
   @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
   email: string;
 
-  // Documento único opcional para turistas y obligatorio para gestores.
+  // Evita exponer el documento de identidad en respuestas públicas o ajenas.
+  @Exclude({ toClassOnly: true })
+  @Expose({ groups: ['admin', 'propio'] })
   @Column({
     type: 'varchar',
     length: 20,
@@ -42,7 +46,9 @@ export class User {
   })
   documentoIdentidad: string | null;
 
-  // URL opcional del soporte entregado por un gestor.
+  // Restringe el soporte documental a administradores y al propio usuario.
+  @Exclude({ toClassOnly: true })
+  @Expose({ groups: ['admin', 'propio'] })
   @Column({
     type: 'varchar',
     length: 255,

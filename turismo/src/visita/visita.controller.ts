@@ -14,6 +14,8 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { User } from '../user/entities/user.entity';
 import { CreateVisitaDto } from './dto/create-visita.dto';
 import { UpdateVisitaDto } from './dto/update-visita.dto';
@@ -36,12 +38,25 @@ export class VisitaController {
     return this.visitaService.create(dto, user);
   }
 
+  @Get('mias')
+  // La consulta del historial personal se limita al usuario autenticado.
+  @ApiBearerAuth()
+  findMias(@GetUser() user: User): Promise<Visita[]> {
+    return this.visitaService.findMias(user);
+  }
+
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  // Solo administradores pueden consultar el historial global.
   findAll(): Promise<Visita[]> {
     return this.visitaService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  // Evita que otros roles consulten visitas ajenas por identificador.
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Visita> {
     return this.visitaService.findOne(id);
   }

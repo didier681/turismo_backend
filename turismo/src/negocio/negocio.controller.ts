@@ -26,6 +26,7 @@ import { User } from '../user/entities/user.entity';
 import { CreateNegocioDto } from './dto/create-negocio.dto';
 import { UpdateNegocioDto } from './dto/update-negocio.dto';
 import { Negocio } from './entities/negocio.entity';
+import { UpdateMembresiaDto } from './dto/update-membresia.dto';
 import { NegocioService } from './negocio.service';
 
 @Controller('negocios')
@@ -83,6 +84,18 @@ export class NegocioController {
     @GetUser() user: User,
   ): Promise<Negocio> {
     return this.negocioService.update(id, dto, user);
+  }
+
+  @Patch(':id/membresia')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  // Solo administradores pueden cambiar el nivel contratado por el negocio.
+  updateMembresia(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMembresiaDto,
+  ): Promise<Negocio> {
+    return this.negocioService.updateMembresia(id, dto.estadoMembresia);
   }
 
   // Elimina el negocio indicado y responde sin contenido.

@@ -96,7 +96,8 @@ describe('SitioTuristicoService community suggestions', () => {
       throw new Error('Se esperaba un conflicto por sitio duplicado');
     } catch (error) {
       expect(error).toBeInstanceOf(ConflictException);
-      expect((error as ConflictException).getResponse()).toMatchObject({
+      expect((error as ConflictException).getResponse()).toEqual({
+        message: 'Ya existe un sitio con un nombre parecido a menos de 200 metros',
         sitio: { idSitio: 12, nombre: 'Parque Central' },
       });
     }

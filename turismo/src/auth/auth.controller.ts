@@ -6,6 +6,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  SerializeOptions,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -26,7 +27,9 @@ export class AuthController {
    * Registrar un nuevo usuario (responde 201 Created)
    */
   @Post('register')
-  register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
+   // El grupo propio permite devolver solo los datos sensibles de quien se registra.
+   @SerializeOptions({ groups: ['propio'] })
+   register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
     return this.authService.register(registerDto);
   }
 
@@ -36,6 +39,8 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  // El grupo propio entrega datos del titular sin habilitar campos en otras rutas.
+  @SerializeOptions({ groups: ['propio'] })
   login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(loginDto);
   }
@@ -48,6 +53,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('profile')
+  // El titular puede consultar sus datos personales completos.
+  @SerializeOptions({ groups: ['propio'] })
   getProfile(@GetUser() user: User): { user: User } {
     return { user };
   }

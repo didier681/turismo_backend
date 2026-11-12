@@ -82,6 +82,8 @@ describe('User registration and authentication', () => {
         email: credentials.email,
         nombre: credentials.nombre,
         role: UserRole.Usuario,
+        documentoIdentidad: null,
+        soporteUrl: null,
       },
       token: 'signed-token',
     });
@@ -110,20 +112,23 @@ describe('User registration and authentication', () => {
   });
 
   it('rejects role assignment in public registration and validates roles for user creation', async () => {
-    for (const role of [UserRole.Admin, UserRole.Gestor]) {
+    for (const fields of [
+      { role: UserRole.Admin },
+      { role: UserRole.Gestor },
+      { documentoIdentidad: '1234567890' },
+      { soporteUrl: 'https://example.com/soporte' },
+    ]) {
       const registration = plainToInstance(RegisterDto, {
         email: 'viajero@example.com',
         password: 'clave-segura-123',
         nombre: 'Viajero',
-        role,
+        ...fields,
       });
       const registrationErrors = await validate(registration, {
         whitelist: true,
         forbidNonWhitelisted: true,
       });
-      expect(registrationErrors.map((error) => error.property)).toContain(
-        'role',
-      );
+      expect(registrationErrors.length).toBeGreaterThan(0);
     }
 
     const invalidUser = plainToInstance(CreateUserDto, {

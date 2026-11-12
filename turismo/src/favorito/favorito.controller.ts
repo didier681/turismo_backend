@@ -21,6 +21,8 @@ import {
 } from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { User } from '../user/entities/user.entity';
 import { CreateFavoritoDto } from './dto/create-favorito.dto';
 import { UpdateFavoritoDto } from './dto/update-favorito.dto';
@@ -58,15 +60,19 @@ export class FavoritoController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @ApiBearerAuth()
+  // La lista global puede revelar patrones de actividad; se reserva a admins.
   findAll(): Promise<Favorito[]> {
     return this.favoritoService.findAll();
   }
 
   @Get(':idUsuario/:idSitio')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @ApiBearerAuth()
+  // Solo administradores consultan favoritos ajenos por su clave compuesta.
   findOne(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
     @Param('idSitio', ParseIntPipe) idSitio: number,

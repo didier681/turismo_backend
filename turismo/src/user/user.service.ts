@@ -167,6 +167,8 @@ export class UserService {
         id: true,
         email: true,
         passwordHash: true,
+        documentoIdentidad: true,
+        soporteUrl: true,
         nombre: true,
         idiomaPref: true,
         fechaRegistro: true,
